@@ -1,0 +1,70 @@
+importScripts('https://xxx.xx/cdn/locomote-sw.js','https://xxx.xx/cdn/locomote-search.js');
+
+self.on('fetch', event => {
+    if( event.url.path == '/custom-endpoint') {
+        ... custom code ...
+    }
+    else {
+        ... deletegate to locomote service worker
+    }
+});
+
+---
+manifest.json
+{
+    "service-worker": {
+        "plugins": ["search"],
+        "endpoints": {
+            "custom": ( event ) => {
+            }
+        }
+    }
+
+}
+---
+
+fetch('https://locomote.sh/account/repo/query.api?path$from=xxx')
+.then( documents => {
+    ...
+});
+
+--
+
+/
+    /assets
+        /icons
+            icon.png -> icon@200x300.png, icon@3x.png
+        /splashscreens
+    /templates
+    
+source branch:
+    * build operations to generate public content
+        - copying
+        - image resizes
+        - web manifest generation
+        - sw generation
+        - webpack builds
+        - jekyll/heckle builds?
+
+public branch:
+    * filesets
+    * location of file indicates fileset category => cache strategy etc.
+        - assets: e.g. app chrome, core images, css, 
+        - templates: belongs to assets?
+        - pages: html file, content stored in file db, full page generated on client using template
+        - scripts: js etc.
+        - content: e.g. images on page
+        - data: e.g. json docs
+
+Developer doesn't need to focus on service worker code
+Can instead think in terms of their content and how they want to use it
+
+Two initial use cases:
+    * PWA:
+        - manifest & meta generation
+        - icon & splashscreen generation
+        - save to home banner on ios
+    * Website:
+        - static site builds
+        - offline capability without sw knowledge
+
