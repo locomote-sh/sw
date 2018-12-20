@@ -37,7 +37,7 @@ function route( request, origins ) {
     for( let i = url.length - 1, first = true; i > 0; i--, first = false ) {
         if( first || url.charCodeAt( i ) == 0x2f ) {
             let key = url.substring( 0, i );
-            let origin = origins.first( origin => origin.url.startsWith( key ) );
+            let origin = origins.find( origin => origin.url.startsWith( key ) );
             if( origin ) {
                 return resolve( request, origin );
             }
