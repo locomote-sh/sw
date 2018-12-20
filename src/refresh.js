@@ -81,7 +81,7 @@ import { getFileset } from './support.js';
  * Refresh the file DB contents against its remote origin.
  * @param origin    A content origin configuration.
  */
-async function refresh( origin ) {
+async function refreshOrigin( origin ) {
     // The hash of the last received update.
     let since;
     // First check for a latest commit record.
@@ -215,7 +215,7 @@ async function _doFilesetRefresh( origin, category, since ) {
  * and removing any deleted files from the response cache.
  * @param origin    A content origin configuration.
  */
-async function clean( origin ) {
+async function cleanOrigin( origin ) {
     // Open the file object store.
     const fileObjStore = await fdbOpenObjStore( origin, 'readwrite');
     // Iterate over deleted records, build lists of items to delete by category.
@@ -254,8 +254,8 @@ async function clean( origin ) {
 }
 
 export {
-    refresh,
-    clean,
+    refreshOrigin,
+    cleanOrigin,
     _doRefresh,
     _doFilesetRefresh
 };

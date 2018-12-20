@@ -64,6 +64,13 @@ async function resolve( request, origin ) {
     // Read file record for requested path.
     const record = await fdbRead( origin, path );
     if( record === undefined ) {
+        // Check for the latest commit record.
+        const latest = await fdbRead( origin, '.locomote/commit/$latest');
+        if( latest === undefined ) {
+            // No latest record indicates that the local file db isn't
+            // synced - delegate the request to the server instead.
+            return fetch( request );
+        }
         return makeErrorResponse( path, 404 );
     }
     if( record.status == 'deleted' ) {

@@ -20,12 +20,15 @@
  */
 async function idbOpen( origin ) {
     const { schema, url } = origin;
-    const name = schema.name || url;
-    const version = schema.version;
+    const { name = url, version } = schema;
     const db = await new Promise( ( resolve, reject ) => {
         const request = indexedDB.open( name, version );
-        request.onsuccess = () => resolve( request.result );
-        request.onerror   = () => reject( request.error );
+        request.onsuccess = ( e ) => {
+            resolve( request.result );
+        };
+        request.onerror = ( e ) => {
+            reject( request.error );
+        };
         request.onupgradeneeded = ( e ) => {
             idbInit( schema, e.target.result );
         };

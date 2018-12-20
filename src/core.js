@@ -16,12 +16,12 @@
 
 import * as support from './support.js';
 import * as streams from './streams.js';
-import * as origin from './origin.js';
-import * as hooks from './hooks.js';
-import * as idb from './idb.js';
-import { query } from './query.js';
-import { route } from './router.js';
-import { refresh } from './refresh.js';
+import * as origin  from './origin.js';
+import * as hooks   from './hooks.js';
+import * as idb     from './idb.js';
+import { query }    from './query.js';
+import { route }    from './router.js';
+import * as refresh from './refresh.js';
 
 const { Origins } = origin;
 
@@ -34,19 +34,36 @@ async function broadcast( message ) {
 // A list of URLs to add to the static cache.
 self.staticURLs = [];
 
+// Refresh all content origins.
+async function refreshAll() {
+    const { refreshOrigin } = self.refresh;
+    for( let origin of Origins ) {
+        await refreshOrigin( origin );
+    }
+}
+
+// Perform the service worker installation.
 async function install() {
-    // Clear out and previously cached statics.
+    console.log('Locomote: Starting service worker installation');
+    // Refresh all content origins.
+    await refreshAll();
+    console.log('Locomote: Refreshed %d content origin(s)', Origins.length );
+    // Clear out any previously cached statics.
     await caches.delete('statics');
     let { staticURLs } = self;
     if( staticURLs.length > 0 ) {
         // Add current statics to cache.
         const cache = await caches.open('statics');
         await cache.addAll( staticURLs );
+        console.log('Locomote: Pre-cached %d static URL(s)', staticURLs.length );
     }
+    console.log('Locomote: Service worker installation completed');
 }
 
+// Activate the service worker.
 async function activate() {
     await clients.claim();
+    console.log('Locomote: Service worker activated');
 }
 
 // Sub-module export for plugin support.
@@ -76,8 +93,7 @@ self.addEventListener('message', event => {
     let { name, args } = event;
     switch( name ) {
         case 'refresh':
-            const { sync } = self.refresh;
-            Origins.forEach( origin => sync( origin ) );
+            refreshAll();
             break;
     }
 });
@@ -90,5 +106,11 @@ self.addEventListener('fetch', event => {
  * Add a list of URLs to the static cache.
  */
 self.staticCache = function( urls ) {
+    if( typeof urls == 'string' ) {
+        urls = [ urls ];
+    }
+    else if( !Array.isArray( urls ) ) {
+        throw new Error('String or array argument expected in staticCache()');
+    }
     self.staticURLs = self.staticURLs.concat( urls );
 }
