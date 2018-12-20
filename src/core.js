@@ -14,11 +14,11 @@
 
 /* Core service worker functionality. */
 
-import support from './support.js';
-import streams from './streams.js';
-import origin from './origin.js';
-import hooks from './hooks.js';
-import idb from './idb.js';
+import * as support from './support.js';
+import * as streams from './streams.js';
+import * as origin from './origin.js';
+import * as hooks from './hooks.js';
+import * as idb from './idb.js';
 import { query } from './query.js';
 import { route } from './router.js';
 import { refresh } from './refresh.js';
@@ -58,6 +58,11 @@ self.idb     = idb;
 self.query   = query;
 self.refresh = refresh;
 
+// Methods for adding origins.
+self.addOrigin = origin.addOrigin;
+self.addOrigins = origin.addOrigins;
+
+// Event handling.
 self.addEventListener('install', event => {
     self.skipWaiting();
     event.waitUntil( install() );

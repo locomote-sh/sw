@@ -81,7 +81,7 @@ import { getFileset } from './support.js';
  * Refresh the file DB contents against its remote origin.
  * @param origin    A content origin configuration.
  */
-async function sync( origin ) {
+async function refresh( origin ) {
     // The hash of the last received update.
     let since;
     // First check for a latest commit record.
@@ -254,7 +254,7 @@ async function clean( origin ) {
 }
 
 export {
-    sync,
+    refresh,
     clean,
     _doRefresh,
     _doFilesetRefresh

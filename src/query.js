@@ -434,9 +434,9 @@ function init(
 
 // -- ES6 import/export.
 
-import idb from './idb.js';
+import * as idb from './idb.js';
 
-const query = init( window, idb );
+const query = init( self, idb );
 
 export { query };
 

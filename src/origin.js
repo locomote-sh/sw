@@ -246,6 +246,9 @@ function addOrigin( origin ) {
  * Register multiple origin configurations.
  */
 function addOrigins( origins ) {
+    if( !Array.isArray( origins ) ) {
+        origins = [ origins ];
+    }
     origins.forEach( origin => addOrigin( origin ) );
 }
 
