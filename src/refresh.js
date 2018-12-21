@@ -91,9 +91,9 @@ async function refreshOrigin( origin ) {
     }
     // Check for an ACM group change.
     if( since ) {
-        let [ group, fingerprint ] = await fdbReadAll( origin, [
-            '.locomote/category/$group',
-            '.locomote/fingerprint/$group'
+        const [ group, fingerprint ] = await fdbReadAll( origin, [
+            '.locomote/acm/group',
+            '.locomote/fingerprint/acm/group'
         ]);
         if( !group || !fingerprint || group.commit != fingerprint.commit ) {
             since = undefined;
@@ -103,22 +103,42 @@ async function refreshOrigin( origin ) {
     // see core.js for this mapping.
     const { _doRefresh, _doFilesetRefresh } = self.refresh;
     // Refresh the file db.
-    await _doRefresh( origin, since );
+    try {
+        await _doRefresh( origin, since );
+    }
+    catch( e ) {
+        console.log('Locomote: Error doing refresh', e );
+        return;
+    }
+    // Update the ACM group fingerprint.
+    let fingerprint = await fdbRead( origin, '.locomote/acm/group');
+    if( fingerprint ) {
+        fingerprint = Object.assign( fingerprint, {
+            path:       '.locomote/fingerprint/acm/group',
+            category:   '$fingerprint'
+        });
+        await fdbWrite( origin, fingerprint );
+    }
     // Check for fileset downloads.
-    await fdbForEach( origin, 'category', '$category', async ( record ) => {
-        let { commit, name } = record;
-        let path = '.locomote/fingerprint/'+name;
-        let fingerprint = await fdbRead( origin, path );
+    await fdbForEach( origin, 'category', '$category', async ( record, objStore ) => {
+        const { commit, name } = record;
+        const path = '.locomote/fingerprint/'+name;
+        let fingerprint = await fdbRead( origin, path, objStore );
         if( !fingerprint ) {
             // Fingerprint record not found so create a new one.
-            fingerprint = { path, name, category: '$category' };
+            fingerprint = { path, name, category: '$fingerprint' };
         }
         if( fingerprint.commit != commit ) {
             // Download fileset update.
-            await _doFilesetRefresh( origin, name, fingerprint.commit );
-            // Update fingerprint.
-            fingerprint.commit = commit;
-            await fdbWrite( origin, fingerprint );
+            try {
+                await _doFilesetRefresh( origin, name, fingerprint.commit );
+                // Update fingerprint.
+                fingerprint.commit = commit;
+                await fdbWrite( origin, fingerprint, objStore );
+            }
+            catch( e ) {
+                console.log('Locomote: Error doing fileset refresh', e );
+            }
         }
     });
 }
@@ -198,14 +218,19 @@ async function _doFilesetRefresh( origin, category, since ) {
         // Write results to file db.
         while( true ) {
             // Read next file path.
-            let { done, value } = await reader.read();
+            const { done, value } = await reader.read();
             if( done ) {
                 break;
             }
             // Make the full file URL.
-            let fileURL = origin.url+value;
+            const fileURL = `${origin.url}/${value}`;
             // Add the file URL to the cache.
-            await cache.add( fileURL );
+            try {
+                await cache.add( fileURL );
+            }
+            catch( e ) {
+                console.log('Locomote: Failed to cache file', fileURL );
+            }
         }
     }
 }

@@ -170,18 +170,36 @@ function fdbOpenObjStore( origin, mode ) {
  *                  asynchonous, and the iterator will wait for the function
  *                  to complete before continuing to the next result.
  */
-function fdbForEach( origin, index, term, callback ) {
-    let cursor = idbOpenIndex( origin, 'files', index, term );
-    return new Promise( ( resolve, reject ) => {
-        cursor.onsuccess = async ( e ) => {
-            let { result } = e.target;
-            if( result ) {
-                await callback( result );
+async function fdbForEach( origin, index, term, callback ) {
+    const request = await idbOpenIndex( origin, 'files', index, term );
+    // Supporting an async callback is tricky here - the IDB transaction
+    // will close once (1) request.onsuccess callback is called and (2)
+    // control then returns to the main event loop. This means that after
+    // an async call to the callback function, the cursor.continue() call
+    // will be to a closed transaction. As a workaround, the following
+    // code first synchronously builds a list of record keys within the
+    // index, and then uses this list to load each record in turn before
+    // calling the async callback. This approach avoids loading the full
+    // dataset into memory and so delivers some of the advantage of an
+    // iterative approach.
+    const keys = await new Promise( ( resolve, reject ) => {
+        const keys = [];
+        request.onsuccess = ( e ) => {
+            const cursor = e.target.result;
+            if( cursor ) {
+                const { primaryKey } = cursor;
+                keys.push( primaryKey );
                 cursor.continue();
             }
-            else resolve();
+            else resolve( keys );
         };
+        request.onerror = () => reject( request.error );
     });
+    // Iterate over record keys, load each record and call the callback.
+    for( let key of keys ) {
+        let record = await fdbRead( origin, key );
+        await callback( record );
+    }
 }
 
 /**

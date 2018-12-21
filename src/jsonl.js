@@ -98,8 +98,8 @@ class JSONLParser {
                         let obj = JSON.parse( json );
                         onValue( obj );
                     }
-                    // Move to end of current line.
-                    i = j;
+                    // Move to after end of current line.
+                    i = j + 1;
                 }
             }
             if( i != this.bufferStart ) {
