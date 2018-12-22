@@ -151,7 +151,7 @@ async function refreshOrigin( origin ) {
 async function _doRefresh( origin, since ) {
 
     // The download URL.
-    let url = `${origin.url}/updates.api`;
+    let url = `${origin.url}updates.api`;
     if( since ) {
         url += `?since=${since}`;
     }
@@ -202,7 +202,7 @@ async function _doFilesetRefresh( origin, category, since ) {
     if( cacheName ) {
         // Fileset is cacheable, built a URL to fetch a list of
         // files that need to be cached.
-        let url = `${origin.url}/filesets.api/${category}/list`;
+        let url = `${origin.url}filesets.api/${category}/list`;
         if( since ) {
             url += `?since=${since}`;
         }
@@ -223,7 +223,7 @@ async function _doFilesetRefresh( origin, category, since ) {
                 break;
             }
             // Make the full file URL.
-            const fileURL = `${origin.url}/${value}`;
+            const fileURL = origin.url+value;
             // Add the file URL to the cache.
             try {
                 await cache.add( fileURL );
@@ -248,7 +248,7 @@ async function cleanOrigin( origin ) {
     await fdbForEach('status','deleted', async ( result ) => {
         // Construct a request object.
         let { primaryKey, path, category } = result.value;
-        let url = `${origin.url}/${path}`;
+        let url = origin.url+path;
         let item = { url, primaryKey };
         let list = deleted[category];
         if( list ) {

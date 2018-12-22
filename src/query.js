@@ -26,8 +26,19 @@ function init(
      */
     async function query( origin, params ) {
 
+        // Convert URLSearchParam to plain JS object.
+        if( params instanceof URLSearchParams ) {
+            let _params = {};
+            for( let key of params.keys() ) {
+                _params[key] = params.get( key );
+            }
+            params = _params;
+        }
+
+        // Open the files object store.
         const objStore = await idbOpenObjStore( origin, 'files');
 
+        // Run the query.
         const results = await new Promise( ( resolve, reject ) => {
 
             // Result list - an array of matching primary keys.

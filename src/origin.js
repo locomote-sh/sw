@@ -36,8 +36,14 @@ const DefaultOrigin = {
     dynamics: {
         /* File query endpoint. */
         'query.api': async function( request, path, params ) {
-            const result = await query( this, params );
-            return makeJSONResponse( result );
+            try {
+                const result = await query( this, params );
+                return makeJSONResponse( result );
+            }
+            catch( e ) {
+                console.log('Locomote: Error executing query', e );
+                return makeErrorResponse( path, 500 );
+            }
         }
     },
 
@@ -125,7 +131,14 @@ async function pageFetch( request, path, params, record ) {
 async function loadPageTemplate( origin, pageType ) {
     const path = `_templates/page-${pageType}.html`;
     const record = await fdbRead( origin, path );
-    return record ? record.body : undefined;
+    if( !record ) {
+        return undefined;
+    }
+    let { page } = record;
+    if( !page ) {
+        return undefined;
+    }
+    return page.body;
 }
 
 /**
@@ -158,7 +171,7 @@ function dataFetch( request, path, params, record ) {
 }
 
 /**
- * Initialize a conten origin configuration.
+ * Initialize a content origin configuration.
  * @param config    A content origin configuration, can be either:
  *                  - A string specifying a content origin URL; the
  *                    the default origin configuration is used.
@@ -168,12 +181,21 @@ function initOrigin( config ) {
     // If configuration is a string then use this as the URL of a content
     // origin with the default configuration.
     if( typeof config == 'string' ) {
-        return Object.assign({ url: config }, DefaultOrigin );
+        let url = config;
+        // Ensure that the content URL ends with a slash.
+        if( !url.endsWith('/') ) {
+            url = url+'/';
+        }
+        return Object.assign({ url }, DefaultOrigin );
     }
     let { url, dynamics, filesets, settings, schema } = config;
     // Ensure we have a content URL.
     if( !url ) {
         throw new Error('Content origin configuration must specify a URL');
+    }
+    // Ensure that the content URL ends with a slash.
+    if( !url.endsWith('/') ) {
+        url = url+'/';
     }
     // Following code implements a targeted merge of the custom origin's
     // configuration over the default configuration.

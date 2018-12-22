@@ -197,7 +197,7 @@ async function fdbForEach( origin, index, term, callback ) {
     });
     // Iterate over record keys, load each record and call the callback.
     for( let key of keys ) {
-        let record = await fdbRead( origin, key );
+        const record = await fdbRead( origin, key );
         await callback( record );
     }
 }
