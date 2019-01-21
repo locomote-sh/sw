@@ -1,0 +1,6 @@
+{
+    "useWebpack": true,
+    "proxies": {
+        "julian/pwa": "http://localhost:9014/julian/pwa"
+    }
+}

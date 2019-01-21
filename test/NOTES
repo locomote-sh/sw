@@ -1,0 +1,26 @@
+Function areas:
+
+Installation:
+x Origins: File DB installation and download
+x Origins: Cachable fileset download and cache
+x Static URL download and cache
+
+Operation:
+x Fetch file record
+x Fetch cached file
+x Fetch non-cached file from server
+x Fetch content via fileset fetcher function
+x Query file db using single index
+x Query file db using multiple indexes
+
+Refresh:
+* Download file db updates from server
+* Download and cache cachable fileset updates
+* Prune deleted files
+
+Non-Chrome browsers:
+* Streams polyfill
+
+Client:
+* SW registration
+* Scheduled refresh

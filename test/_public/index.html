@@ -1,0 +1,24 @@
+<html>
+    <head>
+        <script src="./idb.js"></script>
+        <script>
+            async function query() {
+                let origin = {
+                    url: 'http://localhost:3000/julian/pwa',
+                    schema: {
+                        version: 1
+                    }
+                };
+                let { fdbForEach } = window._idb;
+                await fdbForEach( origin, 'category', '$category', async ( record ) => {
+                    console.log( record );
+                });
+            }
+            query();
+        </script>
+    </head>
+    <body>
+        <h1>Index</h1>
+    </body>
+</html>
+

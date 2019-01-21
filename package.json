@@ -1,6 +1,6 @@
 {
   "name": "sw",
-  "version": "1.0.0",
+  "version": "0.0.8",
   "description": "Service worker.",
   "main": "webpack.config.js",
   "scripts": {
@@ -12,7 +12,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/locomote-sh/sw/issues"
   },
