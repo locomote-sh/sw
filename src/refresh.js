@@ -107,7 +107,7 @@ async function refreshOrigin( origin ) {
         await _doRefresh( origin, since );
     }
     catch( e ) {
-        console.log('Locomote: Error doing refresh', e );
+        console.log('[locomote] Error doing refresh', e );
         return;
     }
     // Update the ACM group fingerprint.
@@ -137,7 +137,7 @@ async function refreshOrigin( origin ) {
                 await fdbWrite( origin, fingerprint, objStore );
             }
             catch( e ) {
-                console.log('Locomote: Error doing fileset refresh', e );
+                console.log('[locomote] Error doing fileset refresh', e );
             }
         }
     });
@@ -229,7 +229,7 @@ async function _doFilesetRefresh( origin, category, since ) {
                 await cache.add( fileURL );
             }
             catch( e ) {
-                console.log('Locomote: Failed to cache file', fileURL );
+                console.log('[locomote] Failed to cache file', fileURL );
             }
         }
     }

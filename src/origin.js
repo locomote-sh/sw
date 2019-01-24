@@ -41,7 +41,7 @@ const DefaultOrigin = {
                 return makeJSONResponse( result );
             }
             catch( e ) {
-                console.log('Locomote: Error executing query', e );
+                console.log('[locomote] Error executing query', e );
                 return makeErrorResponse( path, 500 );
             }
         }
@@ -171,6 +171,21 @@ function dataFetch( request, path, params, record ) {
 }
 
 /**
+ * Normalize a content origin URL.
+ */
+function normOriginURL( url ) {
+    // Convert dot to the service worker's scope URL.
+    if( url == '.' ) {
+        url = self.registration.scope;
+    }
+    // Ensure that the content URL ends with a slash.
+    if( !url.endsWith('/') ) {
+        url = url+'/';
+    }
+    return url;
+}
+
+/**
  * Initialize a content origin configuration.
  * @param config    A content origin configuration, can be either:
  *                  - A string specifying a content origin URL; the
@@ -181,11 +196,7 @@ function initOrigin( config ) {
     // If configuration is a string then use this as the URL of a content
     // origin with the default configuration.
     if( typeof config == 'string' ) {
-        let url = config;
-        // Ensure that the content URL ends with a slash.
-        if( !url.endsWith('/') ) {
-            url = url+'/';
-        }
+        let url = normOriginURL( config );
         return Object.assign({ url }, DefaultOrigin );
     }
     let { url, dynamics, filesets, settings, schema } = config;
@@ -193,10 +204,7 @@ function initOrigin( config ) {
     if( !url ) {
         throw new Error('Content origin configuration must specify a URL');
     }
-    // Ensure that the content URL ends with a slash.
-    if( !url.endsWith('/') ) {
-        url = url+'/';
-    }
+    url = normOriginURL( url );
     // Following code implements a targeted merge of the custom origin's
     // configuration over the default configuration.
     // - The custom configuration URL is always copied to the result.

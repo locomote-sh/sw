@@ -44,10 +44,10 @@ async function refreshAll() {
 
 // Perform the service worker installation.
 async function install() {
-    console.log('Locomote: Starting service worker installation');
+    console.log('[locomote] Starting service worker installation');
     // Refresh all content origins.
     await refreshAll();
-    console.log('Locomote: Refreshed %d content origin(s)', Origins.length );
+    console.log('[locomote] Refreshed %d content origin(s)', Origins.length );
     // Clear out any previously cached statics.
     await caches.delete('statics');
     let { staticURLs } = self;
@@ -55,15 +55,15 @@ async function install() {
         // Add current statics to cache.
         const cache = await caches.open('statics');
         await cache.addAll( staticURLs );
-        console.log('Locomote: Pre-cached %d static URL(s)', staticURLs.length );
+        console.log('[locomote] Pre-cached %d static URL(s)', staticURLs.length );
     }
-    console.log('Locomote: Service worker installation completed');
+    console.log('[locomote] Service worker installation completed');
 }
 
 // Activate the service worker.
 async function activate() {
     await clients.claim();
-    console.log('Locomote: Service worker activated');
+    console.log('[locomote] Service worker activated');
 }
 
 // Sub-module export for plugin support.
