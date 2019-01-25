@@ -280,9 +280,21 @@ function fileset( name, cachable, fetcher ) {
 
 /**
  * Register an origin configuration.
+ * Origins can't share the same content URL, so if a previously added origin
+ * has the same URL as the one being added then it is replaced with the new
+ * origin.
  */
 function addOrigin( origin ) {
-    Origins.push( initOrigin( origin ) );
+    origin = initOrigin( origin );
+    // Check if any previously added origin has the same URL...
+    const { url } = origin;
+    let idx = Origins.findIndex( origin => origin.url == url );
+    // ...and if so then replace it with the new origin...
+    if( idx > -1 ) {
+        Origins[idx] = origin;
+    }
+    // ...else add the new origin to the end.
+    else Origins.push( origin );
 }
 
 /**
