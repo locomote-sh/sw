@@ -38,7 +38,7 @@ self.staticURLs = [];
  * Refresh content origins.
  * @param scope A content origin URL; or '*' to refresh all origins.
  */
-async function refresh( scope = '*' ) {
+async function refreshContent( scope = '*' ) {
     const { refreshOrigin } = self.refresh;
     for( let origin of Origins ) {
         if( scope == '*' || origin.url == scope ) {
@@ -102,7 +102,7 @@ self.addEventListener('message', event => {
     let { name, args } = event;
     switch( name ) {
         case 'refresh':
-            refresh( args );
+            refreshContent( args );
             break;
     }
 });
