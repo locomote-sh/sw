@@ -54,8 +54,13 @@ function route( request, origins ) {
  */
 async function resolve( request, origin ) {
     // Extract request path relative to base URL and query parameters.
-    const { url, dynamics } = origin;
+    const { url, dynamics, excluded } = origin;
     const { path, params } = parseURL( request, url );
+    // Check whether the path is under a sub-path excluded from the origin.
+    if( excluded.some( subPath => path.startsWith( subPath ) ) ) {
+        // Delegate request to network.
+        return fetch( request );
+    }
     // Check whether a request to a dynamic path.
     const dynamic = dynamics[path];
     if( typeof dynamic === 'function' ) {

@@ -88,7 +88,10 @@ const DefaultOrigin = {
     settings: {
         // Default function for evaluating page templates.
         pageTemplateEval: TinyTemper.evaluate
-    }
+    },
+
+    /* Excluded sub-paths. */
+    excluded: []
 };
 
 /**
@@ -199,7 +202,15 @@ function initOrigin( config ) {
         let url = normOriginURL( config );
         return Object.assign({ url }, DefaultOrigin );
     }
-    let { url, dynamics, filesets, settings, schema } = config;
+    // Read configuration properties.
+    let {
+        url,
+        dynamics,
+        filesets,
+        settings,
+        schema,
+        excluded = [] 
+    } = config;
     // Ensure we have a content URL.
     if( !url ) {
         throw new Error('Content origin configuration must specify a URL');
@@ -216,12 +227,14 @@ function initOrigin( config ) {
     //   config's settings.
     // - The DB schemas are merged according to the method described in
     //   the mergeDBSchema() function.
+    // - Excluded sub-paths are used as is.
     return {
         url:        url,
         dynamics:   Object.assign( {}, DefaultOrigin.dynamics, dynamics ),
         filesets:   Object.assign( {}, DefaultOrigin.filesets, filesets ),
         settings:   Object.assign( {}, DefaultOrigin.settings, settings ),
-        schema:     mergeDBSchema( DefaultOrigin.schema, schema )
+        schema:     mergeDBSchema( DefaultOrigin.schema, schema ),
+        excluded
     };
 }
 
