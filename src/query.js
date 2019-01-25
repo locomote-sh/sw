@@ -62,6 +62,8 @@ function init(
 
             // Cursor onsuccess event handler.
             const onsuccess = () => {
+                // Negative pending means iteration is done.
+                if( pending < 0 ) return;
                 try {
                     pending--;
                     // If no pending cursors then process current result.
@@ -83,14 +85,17 @@ function init(
                         if( expect == 0 ) {
                             // No more results available.
                             resolve( results );
+                            expect = -1; // Done iterating.
                         }
                         if( $to && count > $to ) {
                             // Past the end of the 'to' range.
                             resolve( results );
+                            expect = -1; // Done iterating.
                         }
-                        if( $limit && results.length == limit ) {
+                        if( $limit && results.length == $limit ) {
                             // At end of result limit.
                             resolve( results );
+                            expect = -1; // Done iterating.
                         }
                         pending = expect;
                     }
@@ -299,7 +304,7 @@ function init(
          * Test if all cursors are matching the same primary key.
          */
         allKeysMatch() {
-            let { cursors } = this;
+            const { cursors } = this;
             // Note that result is true if only one cursor, so start comparison
             // from second position.
             for( let i = 1; i < cursors.length; i++ ) {
@@ -363,7 +368,7 @@ function init(
         openCursor( onsuccess, onerror ) {
             // Make index search term from query constraints.
             let term;
-            let { from, to, prefix, value } = this;
+            const { from, to, prefix, value } = this;
             if( from && to ) {
                 this.mode = 'range';
                 term = IDBKeyRange.bound( from, to, true );
@@ -384,9 +389,9 @@ function init(
                 this.mode = 'value';
                 term = value;
             }
-            let { index } = this;
+            const { index } = this;
             // Open a cursor.
-            let pending = index == 'path'
+            const pending = index == 'path'
                 // Open cursor on primary key index.
                 ? idbOpenPK( null, null, term, this.objStore )
                 // Open cursor on named index.
@@ -412,7 +417,7 @@ function init(
          * A cursor has completed if it has gone past the last record in its range.
          */
         isComplete() {
-            let { mode, cursor: { result }, prefix } = this;
+            const { mode, cursor: { result }, prefix } = this;
             switch( mode ) {
                 case 'prefix':
                     return result == null || !result.key.startsWith( prefix );
@@ -434,8 +439,8 @@ function init(
          * Compare this query's primary key with that of another query.
          */
         cmp( query ) {
-            let pk0 = this.cursor.result.primaryKey;
-            let pk1 = query.cursor.result.primaryKey;
+            const pk0 = this.cursor.result.primaryKey;
+            const pk1 = query.cursor.result.primaryKey;
             return indexedDB.cmp( pk0, pk1 );
         }
     }
