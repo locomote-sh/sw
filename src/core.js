@@ -34,15 +34,22 @@ async function broadcast( message ) {
 // A list of URLs to add to the static cache.
 self.staticURLs = [];
 
-// Refresh all content origins.
-async function refreshAll() {
+/**
+ * Refresh content origins.
+ * @param scope A content origin URL; or '*' to refresh all origins.
+ */
+async function refresh( scope = '*' ) {
     const { refreshOrigin } = self.refresh;
     for( let origin of Origins ) {
-        await refreshOrigin( origin );
+        if( scope == '*' || origin.url == scope ) {
+            await refreshOrigin( origin );
+        }
     }
 }
 
-// Perform the service worker installation.
+/**
+ * Perform the service worker installation.
+ */
 async function install() {
     console.log('[locomote] Starting service worker installation');
     // Refresh all content origins.
@@ -60,7 +67,9 @@ async function install() {
     console.log('[locomote] Service worker installation completed');
 }
 
-// Activate the service worker.
+/**
+ * Activate the service worker.
+ */
 async function activate() {
     await clients.claim();
     console.log('[locomote] Service worker activated');
@@ -93,7 +102,7 @@ self.addEventListener('message', event => {
     let { name, args } = event;
     switch( name ) {
         case 'refresh':
-            refreshAll();
+            refresh( args );
             break;
     }
 });

@@ -82,6 +82,7 @@ import { getFileset } from './support.js';
  * @param origin    A content origin configuration.
  */
 async function refreshOrigin( origin ) {
+    console.log('[locomote] Refreshing content origin %s', origin.url );
     // The hash of the last received update.
     let since;
     // First check for a latest commit record.
