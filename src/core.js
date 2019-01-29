@@ -53,7 +53,7 @@ async function refreshContent( scope = '*' ) {
 async function install() {
     console.log('[locomote] Starting service worker installation');
     // Refresh all content origins.
-    await refreshAll();
+    await refreshContent();
     console.log('[locomote] Refreshed %d content origin(s)', Origins.length );
     // Clear out any previously cached statics.
     await caches.delete('statics');
