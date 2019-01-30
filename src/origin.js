@@ -26,6 +26,8 @@ import { query } from './query.js';
 
 import { TinyTemper } from './tinytemper.js';
 
+import { log } from './support.js';
+
 // The list of available origins. */
 const Origins = [];
 
@@ -41,7 +43,7 @@ const DefaultOrigin = {
                 return makeJSONResponse( result );
             }
             catch( e ) {
-                console.log('[locomote] Error executing query', e );
+                log('Error executing query', e );
                 return makeErrorResponse( path, 500 );
             }
         }
@@ -288,13 +290,26 @@ function addOrigin( origin ) {
     origin = initOrigin( origin );
     // Check if any previously added origin has the same URL...
     const { url } = origin;
-    let idx = Origins.findIndex( origin => origin.url == url );
-    // ...and if so then replace it with the new origin...
-    if( idx > -1 ) {
-        Origins[idx] = origin;
+    // Add the new origin to the list of origins. Origins are sorted by
+    // length of origin url, longest to shortest; this is done so that
+    // the router finds more specific origins first.
+    for( let idx = 0; idx < Origins.length; idx++ ) {
+        const item = Origins[idx];
+        // If current item has same url as origin being added then
+        // replace with the new origin.
+        if( item.url == url ) {
+            Origins[idx] = origin;
+            return;
+        }
+        // If current item has a shorter url than the origin being
+        // added then insert new origin before it.
+        if( item.url.length < url.length ) {
+            Origins.splice( idx, 0, origin );
+            return;
+        }
     }
-    // ...else add the new origin to the end.
-    else Origins.push( origin );
+    // New origin belongs at end of list.
+    Origins.push( origin );
 }
 
 /**

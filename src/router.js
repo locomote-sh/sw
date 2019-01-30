@@ -20,6 +20,8 @@ import {
 
 import {
     parseURL,
+    extname,
+    joinPath,
     makeErrorResponse,
     makeJSONResponse,
     getFileset
@@ -27,21 +29,29 @@ import {
 
 /**
  * Route a request to the appropriate content origin.
- * @param request   A fetch request.
- * @param origins   A list of available content origins.
+ * @param request       A fetch request.
+ * @param origins       A list of available content origins.
+ * @param staticURLs    A list of statically cached URLs.
  */
-function route( request, origins ) {
-    let { url } = request;
-    // Find the longest sub-path of the key that is
-    // bound to an origin.
-    for( let i = url.length - 1, first = true; i > 0; i--, first = false ) {
-        if( first || url.charCodeAt( i ) == 0x2f ) {
-            let key = url.substring( 0, i );
-            let origin = origins.find( origin => origin.url.startsWith( key ) );
-            if( origin ) {
-                return resolve( request, origin );
-            }
+async function route( request, origins, staticURLs ) {
+    const { url } = request;
+    // Try to find the first origin whose url forms a prefix to the request
+    // url. Note that origins are sorted by url length, so the origin which
+    // provides the longest matching prefix will be the one found.
+    const origin = origins.find( origin => url.startsWith( origin.url ) );
+    if( origin ) {
+        return resolve( request, origin );
+    }
+    // Check if requesting a statically cached resource.
+    if( staticURLs.includes( url ) ) {
+        const cache = await caches.open('statics');
+        let response = await cache.match( request );
+        if( !response ) {
+            // Cache miss - fetch from network and add to cache.
+            response = await fetch( request );
+            cache.put( request, response );
         }
+        return response;
     }
     // If failed to route then delegate to network.
     return fetch( request );
@@ -67,7 +77,8 @@ async function resolve( request, origin ) {
         return dynamic.apply( origin, [ request, path, params ]);
     }
     // Read file record for requested path.
-    const record = await fdbRead( origin, path );
+    const key = getFDBKey( request, origin, path );
+    const record = await fdbRead( origin, key );
     if( record === undefined ) {
         // Check for the latest commit record.
         const latest = await fdbRead( origin, '.locomote/commit/$latest');
@@ -107,6 +118,24 @@ async function resolve( request, origin ) {
         cache.put( request, response );
     }
     return response;
+}
+
+/**
+ * Return the file db record key for a request.
+ * This implementation simply appends 'index.html' to the path if
+ * the request path doesn't have a file extension; this allows
+ * request like 'docs/' to be resolved to a file like 'docs/index.html'. 
+ * Future implementations may support more complex content negotation
+ * logic.
+ * @param request   A file request.
+ * @param origin    The content origin the file belongs to.
+ * @param path      The file path presented in the request.
+ */
+function getFDBKey( request, origin, path ) {
+    if( extname( path ) ) {
+        return path;
+    }
+    return joinPath( path, 'index.html');
 }
 
 export { route };

@@ -25,6 +25,8 @@ import * as refresh from './refresh.js';
 
 const { Origins } = origin;
 
+const { log } = support;
+
 // Broadcast a message to all service worker clients.
 async function broadcast( message ) {
     let clients = await self.clients.matchAll({ includeUncontrolled: true });
@@ -48,23 +50,32 @@ async function refreshContent( scope = '*' ) {
 }
 
 /**
- * Perform the service worker installation.
+ * Refresh static content.
  */
-async function install() {
-    console.log('[locomote] Starting service worker installation');
-    // Refresh all content origins.
-    await refreshContent();
-    console.log('[locomote] Refreshed %d content origin(s)', Origins.length );
-    // Clear out any previously cached statics.
-    await caches.delete('statics');
+async function refreshStatics() {
     let { staticURLs } = self;
     if( staticURLs.length > 0 ) {
         // Add current statics to cache.
         const cache = await caches.open('statics');
         await cache.addAll( staticURLs );
-        console.log('[locomote] Pre-cached %d static URL(s)', staticURLs.length );
+        log('Pre-cached %d static URL(s)', staticURLs.length );
     }
-    console.log('[locomote] Service worker installation completed');
+}
+
+/**
+ * Perform the service worker installation.
+ */
+async function install() {
+    log('Starting service worker installation');
+    // Refresh all content origins.
+    await refreshContent();
+    log('Refreshed %d content origin(s)', Origins.length );
+    // Clear out any previously cached statics.
+    await caches.delete('statics');
+    // Cache static content.
+    let { staticURLs } = self;
+    await refreshStatics();
+    log('Service worker installation completed');
 }
 
 /**
@@ -72,7 +83,7 @@ async function install() {
  */
 async function activate() {
     await clients.claim();
-    console.log('[locomote] Service worker activated');
+    log('Service worker activated');
 }
 
 // Sub-module export for plugin support.
@@ -104,11 +115,14 @@ self.addEventListener('message', event => {
         case 'refresh':
             refreshContent( args );
             break;
+        case 'refresh-statics':
+            refreshStatics();
+            break;
     }
 });
 
 self.addEventListener('fetch', event => {
-    event.respondWith( route( event.request, Origins ) );
+    event.respondWith( route( event.request, Origins, self.staticURLs ) );
 });
 
 /**

@@ -15,6 +15,14 @@
 /* Utility and support functions. */
 
 /**
+ * Log function.
+ */
+function log( msg, ...args ) {
+    args.unshift('[locomote] '+msg );
+    console.log.apply( console, args );
+}
+
+/**
  * Parse a request URL to extract request parameters and the
  * portion of the request path relative to the content origin
  * root.
@@ -34,6 +42,41 @@ function parseURL( request, url ) {
         params = new URLSearchParams('');
     }
     return { path, params };
+}
+
+/**
+ * Extract the file extension from a path.
+ * Returns the file extension, including the '.' prefix,
+ * or null if the path doesn't have a file extension.
+ */
+function extname( path ) {
+    for( let i = path.length - 1; i >= 0; i-- ) {
+        switch( path.charCodeAt( i ) ) {
+            case 0x2E: // .
+                return path.substring( i );
+            case 0x2F: // forward slash
+                return null;
+        }
+    }
+    return null;
+}
+
+/**
+ * Join one or more subpaths to a path.
+ */
+function joinPath( path, ...subpaths ) {
+    for( const subpath of subpaths ) {
+        const trailing = path.charCodeAt( path.length - 1 ) == 0x2F;
+        const leading = subpath.charCodeAt( 0 ) == 0x2F;
+        if( trailing && leading ) {
+            path += subpath.substring( 1 );
+        }
+        else if( trailing || leading ) {
+            path += subpath;
+        }
+        else path += '/'+subpath;
+    }
+    return path;
 }
 
 /**
@@ -117,7 +160,10 @@ function getFileset( origin, category ) {
 }
 
 export {
+    log,
     parseURL,
+    extname,
+    joinPath,
     makeErrorResponse,
     makeJSONResponse,
     makeHTMLResponse,

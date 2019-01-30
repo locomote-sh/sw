@@ -75,14 +75,17 @@ import { openJSONLReader } from './jsonl.js';
 
 import { getHook } from './hooks.js';
 
-import { getFileset } from './support.js';
+import {
+    log,
+    getFileset
+} from './support.js';
 
 /**
  * Refresh the file DB contents against its remote origin.
  * @param origin    A content origin configuration.
  */
 async function refreshOrigin( origin ) {
-    console.log('[locomote] Refreshing content origin %s', origin.url );
+    log('Refreshing content origin %s', origin.url );
     // The hash of the last received update.
     let since;
     // First check for a latest commit record.
@@ -108,7 +111,7 @@ async function refreshOrigin( origin ) {
         await _doRefresh( origin, since );
     }
     catch( e ) {
-        console.log('[locomote] Error doing refresh', e );
+        log('Error doing refresh', e );
         return;
     }
     // Update the ACM group fingerprint.
@@ -138,7 +141,7 @@ async function refreshOrigin( origin ) {
                 await fdbWrite( origin, fingerprint, objStore );
             }
             catch( e ) {
-                console.log('[locomote] Error doing fileset refresh', e );
+                log('Error doing fileset refresh', e );
             }
         }
     });
@@ -230,7 +233,7 @@ async function _doFilesetRefresh( origin, category, since ) {
                 await cache.add( fileURL );
             }
             catch( e ) {
-                console.log('[locomote] Failed to cache file', fileURL );
+                log('Failed to cache file', fileURL );
             }
         }
     }
