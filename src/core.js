@@ -29,7 +29,7 @@ const { log } = support;
 
 // Broadcast a message to all service worker clients.
 async function broadcast( message ) {
-    let clients = await self.clients.matchAll({ includeUncontrolled: true });
+    const clients = await self.clients.matchAll({ includeUncontrolled: true });
     clients.forEach( client => client.postMessage( message ) );
 }
 
@@ -42,11 +42,12 @@ self.staticURLs = [];
  */
 async function refreshContent( scope = '*' ) {
     const { refreshOrigin } = self.refresh;
-    for( let origin of Origins ) {
+    for( const origin of Origins ) {
         if( scope == '*' || origin.url == scope ) {
             await refreshOrigin( origin );
         }
     }
+    log('Refreshed %d content origin(s)', Origins.length );
 }
 
 /**
@@ -69,11 +70,9 @@ async function install() {
     log('Starting service worker installation');
     // Refresh all content origins.
     await refreshContent();
-    log('Refreshed %d content origin(s)', Origins.length );
     // Clear out any previously cached statics.
     await caches.delete('statics');
     // Cache static content.
-    let { staticURLs } = self;
     await refreshStatics();
     log('Service worker installation completed');
 }
@@ -110,7 +109,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('message', event => {
-    let { name, args } = event;
+    const { name, args } = event;
     switch( name ) {
         case 'refresh':
             refreshContent( args );

@@ -36,13 +36,13 @@ import {
 async function route( request, origins, staticURLs ) {
     const { url } = request;
     // Try to find the first origin whose url forms a prefix to the request
-    // url. Note that origins are sorted by url length, so the origin which
-    // provides the longest matching prefix will be the one found.
+    // url. Note that origins are sorted by url length, so any origin found
+    // will be the one with the longest matching prefix.
     const origin = origins.find( origin => url.startsWith( origin.url ) );
     if( origin ) {
         return resolve( request, origin );
     }
-    // Check if requesting a statically cached resource.
+    // No origin found, check if requesting a statically cached resource.
     if( staticURLs.includes( url ) ) {
         const cache = await caches.open('statics');
         let response = await cache.match( request );
@@ -89,6 +89,7 @@ async function resolve( request, origin ) {
         }
         return makeErrorResponse( path, 404 );
     }
+    // Check for a deleted file - this should only happen during a content refresh.
     if( record.status == 'deleted' ) {
         return makeErrorResponse( path, 404 );
     }
@@ -121,12 +122,14 @@ async function resolve( request, origin ) {
 }
 
 /**
- * Return the file db record key for a request.
- * This implementation simply appends 'index.html' to the path if
- * the request path doesn't have a file extension; this allows
- * request like 'docs/' to be resolved to a file like 'docs/index.html'. 
- * Future implementations may support more complex content negotation
- * logic.
+ * Return the file db record key for a request. Normally this is the path
+ * of the request, but when a path references a directory instead of a
+ * specific file (e.g. 'docs/') then a filename needs to be appended before
+ * trying to match a record in the file db. This implementation works by
+ * checking for a file extension on the request path, and if none is found
+ * then appends 'index.html' to the path; so e.g. 'docs/' (or 'docs') won't
+ * have a file extension and so the key returned will be 'docs/index.html'.
+ * Future implementations may support more complex content negotation logic.
  * @param request   A file request.
  * @param origin    The content origin the file belongs to.
  * @param path      The file path presented in the request.

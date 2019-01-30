@@ -139,7 +139,7 @@ async function loadPageTemplate( origin, pageType ) {
     if( !record ) {
         return undefined;
     }
-    let { page } = record;
+    const { page } = record;
     if( !page ) {
         return undefined;
     }
@@ -201,7 +201,7 @@ function initOrigin( config ) {
     // If configuration is a string then use this as the URL of a content
     // origin with the default configuration.
     if( typeof config == 'string' ) {
-        let url = normOriginURL( config );
+        const url = normOriginURL( config );
         return Object.assign({ url }, DefaultOrigin );
     }
     // Read configuration properties.
@@ -251,8 +251,8 @@ function mergeDBSchema( s1, s2 ) {
         return s1;
     }
     // Initialize result with properties from first schema.
-    let result = Object.assign( {}, s1 );
-    let { version, stores } = s2;
+    const result = Object.assign( {}, s1 );
+    const { version, stores } = s2;
     // Ensure second schema has required values.
     if( version === undefined ) {
         throw new Error('Database schema must specify version');
@@ -276,7 +276,7 @@ function mergeDBSchema( s1, s2 ) {
  *                  files within the fileset.
  */
 function fileset( name, cachable, fetcher ) {
-    let cacheName = cachable ? name : undefined;
+    const cacheName = cachable ? name : undefined;
     return { name, cacheName, fetcher };
 }
 
@@ -289,21 +289,21 @@ function fileset( name, cachable, fetcher ) {
 function addOrigin( origin ) {
     origin = initOrigin( origin );
     // Check if any previously added origin has the same URL...
-    const { url } = origin;
+    const newURL = origin.url;
     // Add the new origin to the list of origins. Origins are sorted by
     // length of origin url, longest to shortest; this is done so that
     // the router finds more specific origins first.
-    for( let idx = 0; idx < Origins.length; idx++ ) {
-        const item = Origins[idx];
+    for( const idx = 0; idx < Origins.length; idx++ ) {
+        const { url } = Origins[idx];
         // If current item has same url as origin being added then
         // replace with the new origin.
-        if( item.url == url ) {
+        if( url == newURL ) {
             Origins[idx] = origin;
             return;
         }
         // If current item has a shorter url than the origin being
         // added then insert new origin before it.
-        if( item.url.length < url.length ) {
+        if( url.length < newURL.length ) {
             Origins.splice( idx, 0, origin );
             return;
         }
@@ -317,9 +317,10 @@ function addOrigin( origin ) {
  */
 function addOrigins( origins ) {
     if( !Array.isArray( origins ) ) {
-        origins = [ origins ];
+        addOrigin( origins );
+        return;
     }
-    origins.forEach( origin => addOrigin( origin ) );
+    origins.forEach( addOrigin );
 }
 
 export {

@@ -51,7 +51,7 @@ function registerHook( name, callback ) {
  */
 function getHook( name ) {
     // Lookup the hook.
-    let hook = Hooks[name];
+    const hook = Hooks[name];
     // Error if hook not found.
     if( hook === undefined ) {
         throw new Error(`Bad hook name: ${name}`);

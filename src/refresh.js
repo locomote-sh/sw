@@ -89,7 +89,7 @@ async function refreshOrigin( origin ) {
     // The hash of the last received update.
     let since;
     // First check for a latest commit record.
-    let latest = await fdbRead( origin, '.locomote/commit/$latest');
+    const latest = await fdbRead( origin, '.locomote/commit/$latest');
     if( latest ) {
         since = latest.commit;
     }

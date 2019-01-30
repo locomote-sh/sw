@@ -43,10 +43,10 @@ async function idbOpen( origin ) {
  */
 function idbInit( schema, db ) {
     const { stores } = schema;
-    for( let name in stores ) {
+    for( const name in stores ) {
         const { options, indexes } = stores[name];
         const objStore = db.createObjectStore( name, options );
-        for( let index in indexes ) {
+        for( const index in indexes ) {
             const { keyPath, options } = indexes[index];
             objStore.createIndex( index, keyPath, options );
         }
@@ -196,7 +196,7 @@ async function fdbForEach( origin, index, term, callback ) {
         request.onerror = () => reject( request.error );
     });
     // Iterate over record keys, load each record and call the callback.
-    for( let key of keys ) {
+    for( const key of keys ) {
         const record = await fdbRead( origin, key );
         await callback( record );
     }

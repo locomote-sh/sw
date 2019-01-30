@@ -45,7 +45,7 @@ class JSONLParser {
     addData( data ) {
         if( this.buffer ) {
             // Resize the buffer and add the new data to the end.
-            let buffer = new Uint8Array( this.buffer.length + data.length );
+            const buffer = new Uint8Array( this.buffer.length + data.length );
             buffer.set( this.buffer, 0 );
             buffer.set( data, this.buffer.length );
             this.buffer = buffer;
@@ -91,11 +91,11 @@ class JSONLParser {
                 // (In case the final line isn't terminated with a newline).
                 if( buffer[j] == NEWLINE || (complete && j == end) ) {
                     // Extract the line data and convert to string.
-                    let line = buffer.slice( i, j );
-                    let json = textDecoder.decode( line );
+                    const line = buffer.slice( i, j );
+                    const json = textDecoder.decode( line );
                     if( json.length > 0 ) {
                         // Parse the line JSON and call the callback.
-                        let obj = JSON.parse( json );
+                        const obj = JSON.parse( json );
                         onValue( obj );
                     }
                     // Move to after end of current line.
@@ -123,7 +123,7 @@ class JSONLParser {
  */
 function openJSONLReader( response, global ) {
     // Check the response MIME type.
-    let contentType = response.headers['Content-Type'];
+    const contentType = response.headers['Content-Type'];
     if( contentType && !contentType.startsWith('application/x-jsonlines') ) {
         throw new Error('Expected application/x-jsonlines MIME type');
     }
