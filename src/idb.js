@@ -72,8 +72,8 @@ async function idbOpenObjStore( origin, store, mode = 'readonly' ) {
  * @param objStore  (Optional) a previously opened object store transaction.
  */
 async function idbRead( origin, store, key, objStore = idbOpenObjStore( origin, store ) ) {
-    objStore = await objStore;
-    return new Promise( ( resolve, reject ) => {
+    return new Promise( async ( resolve, reject ) => {
+        objStore = await objStore;
         const request = objStore.get( key );
         request.onsuccess = () => resolve( request.result );
         request.onerror   = () => reject( request.error );
@@ -102,8 +102,8 @@ async function idbReadAll( origin, store, keys, objStore = idbOpenObjStore( orig
  * @param objStore  (Optional) a previously opened object store transaction.
  */
 async function idbWrite( origin, store, object, objStore = idbOpenObjStore( origin, store ) ) {
-    objStore = await objStore;
-    return new Promise( ( resolve, reject ) => {
+    return new Promise( async ( resolve, reject ) => {
+        objStore = await objStore;
         const request = objStore.put( object );
         request.onsuccess = resolve;
         request.onerror   = reject;
@@ -118,8 +118,8 @@ async function idbWrite( origin, store, object, objStore = idbOpenObjStore( orig
  * @param objStore  (Optional) a previously opened object store transaction.
  */
 async function idbDelete( origin, store, key, objStore = idbOpenObjStore( origin, store ) ) {
-    objStore = await objStore;
-    return new Promise( ( resolve, reject ) => {
+    return new Promise( async ( resolve, reject ) => {
+        objStore = await objStore;
         const request = objStore.delete( key );
         request.onsuccess = resolve;
         request.onerror   = reject;
@@ -227,8 +227,8 @@ function fdbReadAll( origin, paths ) {
  * @param objStore  (Optional) a previously opened object store transaction.
  */
 async function fdbWrite( origin, record, objStore = fdbOpenObjStore( origin, 'readwrite') ) {
-    objStore = await objStore;
-    return new Promise( ( resolve, reject ) => {
+    return new Promise( async ( resolve, reject ) => {
+        objStore = await objStore;
         const request = objStore.put( record );
         request.onsuccess = resolve;
         request.onerror   = reject;

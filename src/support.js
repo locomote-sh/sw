@@ -50,7 +50,7 @@ function parseURL( request, url ) {
  * or null if the path doesn't have a file extension.
  */
 function extname( path ) {
-    for( const i = path.length - 1; i >= 0; i-- ) {
+    for( let i = path.length - 1; i >= 0; i-- ) {
         switch( path.charCodeAt( i ) ) {
             case 0x2E: // .
                 return path.substring( i );

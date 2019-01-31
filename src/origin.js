@@ -46,6 +46,10 @@ const DefaultOrigin = {
                 log('Error executing query', e );
                 return makeErrorResponse( path, 500 );
             }
+        },
+        /* Updates API endpoint - always delegate to network. */
+        'updates.api': function( request, path, params ) {
+            return fetch( request );
         }
     },
 
@@ -293,7 +297,7 @@ function addOrigin( origin ) {
     // Add the new origin to the list of origins. Origins are sorted by
     // length of origin url, longest to shortest; this is done so that
     // the router finds more specific origins first.
-    for( const idx = 0; idx < Origins.length; idx++ ) {
+    for( let idx = 0; idx < Origins.length; idx++ ) {
         const { url } = Origins[idx];
         // If current item has same url as origin being added then
         // replace with the new origin.
