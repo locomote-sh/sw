@@ -17,9 +17,23 @@
 /**
  * Log function.
  */
-function log( msg, ...args ) {
+function log( level, msg, ...args ) {
+    switch( level ) {
+        case 'error':
+            break;
+        case 'debug':
+            level = 'log';
+            msg = '* '+msg;
+            break;
+        default:
+            if( msg !== undefined ) {
+                args.unshift( msg );
+            }
+            msg = level;
+            level = 'log';
+    }
     args.unshift('[locomote] '+msg );
-    console.log.apply( console, args );
+    console[level].apply( console, args );
 }
 
 /**

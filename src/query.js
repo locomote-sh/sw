@@ -393,9 +393,9 @@ function init(
             // Open a cursor.
             const pending = index == 'path'
                 // Open cursor on primary key index.
-                ? idbOpenPK( null, null, term, this.objStore )
+                ? idbOpenPK( term, this.objStore )
                 // Open cursor on named index.
-                : idbOpenIndex( null, null, index, term, this.objStore );
+                : idbOpenIndex( index, term, this.objStore );
             // Wait for async call to complete and then attach cursor.
             pending
                 .then( cursor => {

@@ -70,14 +70,19 @@ async function refreshStatics() {
  * Perform the service worker installation.
  */
 async function install() {
-    log('Starting service worker installation');
-    // Refresh all content origins.
-    await refreshContent();
-    // Clear out any previously cached statics.
-    await caches.delete('statics');
-    // Cache static content.
-    await refreshStatics();
-    log('Service worker installation completed');
+    try {
+        log('Starting service worker installation');
+        // Refresh all content origins.
+        await refreshContent();
+        // Clear out any previously cached statics.
+        await caches.delete('statics');
+        // Cache static content.
+        await refreshStatics();
+        log('Service worker installation completed');
+    }
+    catch( e ) {
+        log('error','Error installing service worker', e );
+    }
 }
 
 /**

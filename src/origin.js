@@ -84,6 +84,10 @@ const DefaultOrigin = {
                     'page-type': {
                         keyPath: 'page.type',
                         options: { unique: false }
+                    },
+                    'commit': {
+                        keyPath: 'commit',
+                        options: { unique: false }
                     }
                 }
             }

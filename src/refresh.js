@@ -64,11 +64,16 @@
  */
 
 import {
+    idbRead,
+    idbWrite,
+    idbDelete,
+    idbIndexCount,
+    fdbOpenObjStore,
     fdbRead,
     fdbReadAll,
     fdbForEach,
     fdbWrite,
-    fdbOpenObjStore
+    fdbDelete
 } from './idb.js';
 
 import { openJSONLReader } from './jsonl.js';
@@ -85,16 +90,40 @@ import {
  * @param origin    A content origin configuration.
  */
 async function refreshOrigin( origin ) {
-    log('Refreshing content origin %s', origin.url );
+
+    log('Refresh: %s', origin.url );
     // The hash of the last received update.
     let since;
     // First check for a latest commit record.
     const latest = await fdbRead( origin, '.locomote/commit/$latest');
     if( latest ) {
         since = latest.commit;
+        log('debug','Refresh: Latest commit=%s', since );
+    }
+    else {
+        log('debug','Refresh: No latest, marking commits...');
+        // If no latest commit record then it can indicate one of a few sitations:
+        // - this is the first refresh and the file db is empty;
+        // - the previous refresh failed to complete;
+        // - the latest commit record has been deleted somehow;
+        // In either of the last two cases, deleted files may be left on the client.
+        // This happens because given a commit history with two commits, A and B;
+        // and if the client previously synced with commit A, looses the latest
+        // record, and then refreshes against commit B; and if files in A where
+        // deleted in B; then those files won't be included in the refresh against
+        // B, and will remain in the local copy of the filedb.
+        //
+        // Mark each commit record as stale; this is done so that we can detect
+        // any obsolete commits after the record, and delete any files belonging
+        // to those commits.
+        await fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
+            record._stale = true;
+            await idbWrite( record, objStore );
+        });
     }
     // Check for an ACM group change.
     if( since ) {
+        log('debug','Refresh: Checking ACM fingerprint...');
         const [ group, fingerprint ] = await fdbReadAll( origin, [
             '.locomote/acm/group',
             '.locomote/fingerprint/acm/group'
@@ -108,26 +137,46 @@ async function refreshOrigin( origin ) {
     const { _doRefresh, _doFilesetRefresh } = self.refresh;
     // Refresh the file db.
     try {
+        log('debug','Refresh: Downloading updates...');
         await _doRefresh( origin, since );
     }
     catch( e ) {
-        log('Error doing refresh', e );
+        log('debug','Error doing refresh', e );
         return;
     }
     // Update the ACM group fingerprint.
-    let fingerprint = await fdbRead( origin, '.locomote/acm/group');
+    let objStore = await fdbOpenObjStore( origin );
+    let fingerprint = await idbRead('.locomote/acm/group', objStore );
     if( fingerprint ) {
+        log('debug','Refresh: Updating ACM fingerprint...');
         fingerprint = Object.assign( fingerprint, {
             path:       '.locomote/fingerprint/acm/group',
             category:   '$fingerprint'
         });
-        await fdbWrite( origin, fingerprint );
+        await idbWrite( fingerprint, objStore );
     }
+    // Check for stale commits, and delete any files in those commits.
+    // (See comment above for background).
+    log('debug','Refresh: Checking for stale commits...');
+    await fdbForEach( origin, 'category', '$commit', async ( record ) => {
+        const { _stale, commit } = record;
+        if( _stale ) {
+            log('debug','Refresh: Deleting files in %s...', commit );
+            // Iterate over each file in the stale commit and change its status to deleted.
+            // The post-refresh cleanup will then delete the record and remove its associated
+            // file from the cache.
+            await fdbForEach( origin, 'commit', commit, ( record, objStore ) => {
+                record.status = 'deleted';
+                return idbWrite( record, objStore );
+            });
+        }
+    });
     // Check for fileset downloads.
-    await fdbForEach( origin, 'category', '$category', async ( record, objStore ) => {
+    log('debug','Refresh: Checking for fileset downloads...');
+    await fdbForEach( origin, 'category', '$category', async ( record ) => {
         const { commit, name } = record;
         const path = '.locomote/fingerprint/'+name;
-        let fingerprint = await fdbRead( origin, path, objStore );
+        let fingerprint = await fdbRead( origin, path );
         if( !fingerprint ) {
             // Fingerprint record not found so create a new one.
             fingerprint = { path, name, category: '$fingerprint' };
@@ -135,16 +184,21 @@ async function refreshOrigin( origin ) {
         if( fingerprint.commit != commit ) {
             // Download fileset update.
             try {
+                log('debug','Refresh: Downloading updates for fileset %s...', name );
                 await _doFilesetRefresh( origin, name, fingerprint.commit );
                 // Update fingerprint.
                 fingerprint.commit = commit;
-                await fdbWrite( origin, fingerprint, objStore );
+                await fdbWrite( origin, fingerprint );
             }
             catch( e ) {
-                log('Error doing fileset refresh', e );
+                log('debug','Error doing fileset refresh', e );
             }
         }
     });
+    // Tidy-up.
+    log('debug','Refresh: Tidy up');
+    await cleanOrigin( origin );
+    log('debug','Refresh: Done');
 }
 
 /**
@@ -169,8 +223,6 @@ async function _doRefresh( origin, since ) {
     if( response.status == 200 ) {
         // Read the update hook.
         const updateHook = getHook('fdb-update');
-        // Start to write to the file DB.
-        const fileObjStore = fdbOpenObjStore( origin, 'readwrite');
         // Open a reader on multi-line JSON.
         const reader = openJSONLReader( response, self );
         // Write results to file db.
@@ -183,7 +235,7 @@ async function _doRefresh( origin, since ) {
             // Call the update hook.
             value = await updateHook( origin, value );
             // Write to file DB.
-            await fdbWrite( origin, value, fileObjStore );
+            await fdbWrite( origin, value );
         }
     }
 }
@@ -202,7 +254,7 @@ async function _doRefresh( origin, since ) {
  */
 async function _doFilesetRefresh( origin, category, since ) {
     // Read the fileset cache name.
-    let { cacheName } = getFileset( origin, category );
+    const { cacheName } = getFileset( origin, category );
     if( cacheName ) {
         // Fileset is cacheable, built a URL to fetch a list of
         // files that need to be cached.
@@ -233,7 +285,7 @@ async function _doFilesetRefresh( origin, category, since ) {
                 await cache.add( fileURL );
             }
             catch( e ) {
-                log('Failed to cache file', fileURL );
+                log('error','Failed to cache file', fileURL );
             }
         }
     }
@@ -245,16 +297,17 @@ async function _doFilesetRefresh( origin, category, since ) {
  * @param origin    A content origin configuration.
  */
 async function cleanOrigin( origin ) {
-    // Open the file object store.
-    const fileObjStore = await fdbOpenObjStore( origin, 'readwrite');
     // Iterate over deleted records, build lists of items to delete by category.
     const deleted = {};
-    await fdbForEach('status','deleted', async ( result ) => {
-        // Construct a request object.
-        let { primaryKey, path, category } = result.value;
-        let url = origin.url+path;
-        let item = { url, primaryKey };
-        let list = deleted[category];
+    await fdbForEach( origin, 'status','deleted', record => {
+        // Read values from the record.
+        const { primaryKey, path, category } = record;
+        // Construct a request URL.
+        const url = origin.url+path;
+        // Construct an deletion item.
+        const item = { primaryKey, url };
+        // Record the fileset category.
+        const list = deleted[category];
         if( list ) {
             list.push( item );
         }
@@ -263,23 +316,33 @@ async function cleanOrigin( origin ) {
         }
     });
     // Iterate over each fileset category and remove deleted files from its cache.
-    for( let category in deleted ) {
+    for( const category in deleted ) {
         // Get the fileset cache name..
-        let { cacheName } = getFileset( category );
+        const { cacheName } = getFileset( origin, category );
         // Open the cache.
-        let cache = await caches.open( cacheName );
+        const cache = await caches.open( cacheName );
         // Get the list of deleted items.
-        let items = deleted[category];
+        const items = deleted[category];
+        log('debug','Refresh: Deleting %d files from fileset %s...', items.length, category );
         // Iterate over the deleted items.
-        for( let { url, primaryKey } of urls ) {
-            let request = new Request( url );
+        for( const { url, primaryKey } of items ) {
+            const request = new Request( url );
             // Delete from the cache.
             cache.delete( request );
             // Delete the object store record.
-            await idbDelete( null, null, primaryKey, fileObjStore );
+            await fdbDelete( origin, primaryKey );
         }
     }
-    // TODO Prune commit records - needs an index.
+    // Prune commit records - delete any commit record with no active file records.
+    await fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
+        const { path, commit } = record;
+        const count = await idbIndexCount('commit', commit, objStore );
+        // Note that the commit record itself will appear in the index.
+        if( count <= 1 ) {
+            log('debug','Refresh: Deleting commit record for %s...', commit );
+            await idbDelete( path, objStore );
+        }
+    });
 }
 
 export {
