@@ -47,7 +47,7 @@ async function refreshContent( scope = '*' ) {
             await refreshOrigin( origin );
         }
     }
-    log('Refreshed %d content origin(s)', Origins.length );
+    log('debug','Refreshed %d content origin(s)', Origins.length );
 }
 
 /**
@@ -59,7 +59,7 @@ async function refreshStatics() {
         // Add current statics to cache.
         const cache = await caches.open('statics');
         await cache.addAll( staticURLs );
-        log('Pre-cached %d static URL(s)', staticURLs.length );
+        log('debug','Pre-cached %d static URL(s)', staticURLs.length );
     }
 }
 
@@ -68,17 +68,17 @@ async function refreshStatics() {
  */
 async function install() {
     try {
-        log('Starting service worker installation');
+        log('Starting installation');
         // Refresh all content origins.
         await refreshContent();
         // Clear out any previously cached statics.
         await caches.delete('statics');
         // Cache static content.
         await refreshStatics();
-        log('Service worker installation completed');
+        log('Installation completed');
     }
     catch( e ) {
-        log('error','Error installing service worker', e );
+        log('error','Installation error', e );
     }
 }
 
@@ -87,7 +87,7 @@ async function install() {
  */
 async function activate() {
     await clients.claim();
-    log('Service worker activated');
+    log('Choo choo!');
 }
 
 // Sub-module export for plugin support.
