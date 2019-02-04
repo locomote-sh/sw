@@ -14,6 +14,12 @@
 
 /* Utility and support functions. */
 
+//const LogPrefix = '[locomote] ';
+const LogPrefix = '\u{1f682} '; // https://emojipedia.org/steam-locomotive/
+
+// const DebugPrefix = '* ';
+const DebugPrefix = '\u{1f41e} '; // https://emojipedia.org/lady-beetle/
+
 /**
  * Log function.
  * @level   The log level; optional, can be 'error' or 'debug'; used as
@@ -28,7 +34,7 @@ function log( level, msg, ...args ) {
             break;
         case 'debug':
             level = 'log';
-            msg = '* '+msg;
+            msg = DebugPrefix+msg;
             break;
         default:
             // No log level supplied - move the msg arg, if any, to the
@@ -40,7 +46,7 @@ function log( level, msg, ...args ) {
             msg = level;
             level = 'log';
     }
-    args.unshift('[locomote] '+msg );
+    args.unshift( LogPrefix+msg );
     console[level].apply( console, args );
 }
 

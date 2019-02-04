@@ -91,17 +91,17 @@ import {
  */
 async function refreshOrigin( origin ) {
 
-    log('Refresh: %s', origin.url );
+    log('\u27f3 %s', origin.url );
     // The hash of the last received update.
     let since;
     // First check for a latest commit record.
     const latest = await fdbRead( origin, '.locomote/commit/$latest');
     if( latest ) {
         since = latest.commit;
-        log('debug','Refresh: Latest commit=%s', since );
+        log('debug','\u27f3 Latest commit=%s', since );
     }
     else {
-        log('debug','Refresh: No latest, staleing commits...');
+        log('debug','\u27f3 No latest, staleing commits...');
         // If no latest commit record then it can indicate one of a few sitations:
         // - this is the first refresh and the file db is empty;
         // - the previous refresh failed to complete;
@@ -123,7 +123,7 @@ async function refreshOrigin( origin ) {
     }
     // Check for an ACM group change.
     if( since ) {
-        log('debug','Refresh: Checking ACM fingerprint...');
+        log('debug','\u27f3 Checking ACM fingerprint...');
         const [ group, fingerprint ] = await fdbReadAll( origin, [
             '.locomote/acm/group',
             '.locomote/fingerprint/acm/group'
@@ -137,7 +137,7 @@ async function refreshOrigin( origin ) {
     const { _doRefresh, _doFilesetRefresh } = self.refresh;
     // Refresh the file db.
     try {
-        log('debug','Refresh: Downloading updates...');
+        log('debug','\u27f3 Downloading updates...');
         await _doRefresh( origin, since );
     }
     catch( e ) {
@@ -148,7 +148,7 @@ async function refreshOrigin( origin ) {
     const objStore = await fdbOpenObjStore( origin );
     let fingerprint = await idbRead('.locomote/acm/group', objStore );
     if( fingerprint ) {
-        log('debug','Refresh: Updating ACM fingerprint...');
+        log('debug','\u270e Updating ACM fingerprint...');
         fingerprint = Object.assign( fingerprint, {
             path:       '.locomote/fingerprint/acm/group',
             category:   '$fingerprint'
@@ -157,11 +157,11 @@ async function refreshOrigin( origin ) {
     }
     // Check for stale commits, and delete any files in those commits.
     // (See comment above for background).
-    log('debug','Refresh: Checking for stale commits...');
+    log('debug','\u27f3 Checking for stale commits...');
     await fdbForEach( origin, 'category', '$commit', async ( record ) => {
         const { _stale, info: { commit } } = record;
         if( _stale ) {
-            log('debug','Refresh: Deleting files in stale commit %s...', commit );
+            log('debug','\u2704 Deleting files in stale commit %s...', commit );
             // Iterate over each file in the stale commit and change its status to deleted.
             // The post-refresh cleanup will then delete the record and remove its associated
             // file from the cache.
@@ -172,7 +172,7 @@ async function refreshOrigin( origin ) {
         }
     });
     // Check for fileset downloads.
-    log('debug','Refresh: Checking for fileset downloads...');
+    log('debug','\u27f3 Checking for fileset downloads...');
     await fdbForEach( origin, 'category', '$category', async ( record ) => {
         const { commit, name } = record;
         const path = '.locomote/fingerprint/'+name;
@@ -184,7 +184,7 @@ async function refreshOrigin( origin ) {
         if( fingerprint.commit != commit ) {
             // Download fileset update.
             try {
-                log('debug','Refresh: Downloading updates for fileset %s...', name );
+                log('debug','\u27f3 Downloading updates for fileset %s...', name );
                 await _doFilesetRefresh( origin, name, fingerprint.commit );
                 // Update fingerprint.
                 fingerprint.commit = commit;
@@ -196,9 +196,9 @@ async function refreshOrigin( origin ) {
         }
     });
     // Tidy-up.
-    log('debug','Refresh: Tidy up');
+    log('debug','\u27f3 Tidy up');
     await cleanOrigin( origin );
-    log('debug','Refresh: Done');
+    log('debug','\u27f3 Done');
 }
 
 /**
@@ -323,7 +323,7 @@ async function cleanOrigin( origin ) {
         const cache = await caches.open( cacheName );
         // Get the list of deleted items.
         const items = deleted[category];
-        log('debug','Refresh: Deleting %d files from fileset %s...', items.length, category );
+        log('debug','\u2704 Deleting %d files from fileset %s...', items.length, category );
         // Iterate over the deleted items.
         for( const { path, url } of items ) {
             const request = new Request( url );
@@ -339,7 +339,7 @@ async function cleanOrigin( origin ) {
         const count = await idbIndexCount('commit', commit, objStore );
         log('debug','commit %s count %d', commit, count );
         if( count == 0 ) {
-            log('debug','Refresh: Deleting commit record for %s...', commit );
+            log('debug','\u2704 Deleting commit record for %s...', commit );
             await idbDelete( path, objStore );
         }
     });
