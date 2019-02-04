@@ -26,6 +26,8 @@ const NEWLINE = 0x0A;
 class JSONLParser {
 
     constructor() {
+        // Default empty buffer to start.
+        this.buffer = new Uint8Array( 0 );
         // Buffer start offset.
         this.bufferStart = 0;
         // Abort flag.
@@ -43,17 +45,11 @@ class JSONLParser {
      * @param data  A Uint8Array of character data.
      */
     addData( data ) {
-        if( this.buffer ) {
-            // Resize the buffer and add the new data to the end.
-            const buffer = new Uint8Array( this.buffer.length + data.length );
-            buffer.set( this.buffer, 0 );
-            buffer.set( data, this.buffer.length );
-            this.buffer = buffer;
-        }
-        else {
-            this.buffer = data;
-            this.bufferStart = 0;
-        }
+        // Resize the buffer and add the new data to the end.
+        const buffer = new Uint8Array( this.buffer.length + data.length );
+        buffer.set( this.buffer, 0 );
+        buffer.set( data, this.buffer.length );
+        this.buffer = buffer;
         // Parse buffer contents.
         this._parseBuffer( false );
     }
