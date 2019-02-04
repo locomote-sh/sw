@@ -28,7 +28,7 @@ function init(
 
         // Convert URLSearchParam to plain JS object.
         if( params instanceof URLSearchParams ) {
-            let _params = {};
+            const _params = {};
             for( let key of params.keys() ) {
                 _params[key] = params.get( key );
             }

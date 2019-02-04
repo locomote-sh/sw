@@ -64,16 +64,22 @@ async function idbOpenObjStore( origin, store, mode = 'readonly' ) {
 }
 
 /**
+ * Convert an idb request object to a promise.
+ */
+function reqAsPromise( request ) {
+    return new Promise( ( resolve, reject ) => {
+        request.onsuccess = () => resolve( request.result );
+        request.onerror   = () => reject( request.error );
+    });
+}
+
+/**
  * Read an object from an object store.
  * @param key       An object primary key.
  * @param objStore  An open object store transaction.
  */
 function idbRead( key, objStore ) {
-    return new Promise( ( resolve, reject ) => {
-        const request = objStore.get( key );
-        request.onsuccess = () => resolve( request.result );
-        request.onerror   = () => reject( request.error );
-    });
+    return reqAsPromise( objStore.get( key ) );
 }
 
 /**
@@ -93,11 +99,7 @@ function idbReadAll( keys, objStore ) {
  * @param objStore  An open object store transaction.
  */
 function idbWrite( object, objStore ) {
-    return new Promise( ( resolve, reject ) => {
-        const request = objStore.put( object );
-        request.onsuccess = resolve;
-        request.onerror   = reject;
-    });
+    return reqAsPromise( objStore.put( object ) );
 }
 
 /**
@@ -106,11 +108,7 @@ function idbWrite( object, objStore ) {
  * @param objStore  An open object store transaction.
  */
 function idbDelete( key, objStore ) {
-    return new Promise( ( resolve, reject ) => {
-        const request = objStore.delete( key );
-        request.onsuccess = resolve;
-        request.onerror   = reject;
-    });
+    return reqAsPromise( objStore.delete( key ) );
 }
 
 /**
@@ -138,13 +136,8 @@ function idbOpenIndex( index, term, objStore ) {
  * @param term      An index filter term.
  * @param objStore  An open object store transaction.
  */
-function idbIndexCount( index, term, objStore ) {
-    return new Promise( async ( resolve, reject ) => {
-        const _index = await idbOpenIndex( index, term, objStore );
-        const request = _index.count();
-        request.onsuccess = resolve;
-        request.onerror   = reject;
-    });
+async function idbIndexCount( index, term, objStore ) {
+    return reqAsPromise( objStore.index( index ).count() );
 }
     
 /**
@@ -211,7 +204,7 @@ async function fdbReadAll( origin, paths ) {
  */
 async function fdbDelete( origin, path ) {
     const objStore = await fdbOpenObjStore( origin, 'readwrite');
-    return idbDelete( origin, 'files', path, objStore );
+    return idbDelete( path, objStore );
 }
 
 /**
@@ -221,11 +214,7 @@ async function fdbDelete( origin, path ) {
  */
 async function fdbWrite( origin, record ) {
     const objStore = await fdbOpenObjStore( origin, 'readwrite');
-    return new Promise( async ( resolve, reject ) => {
-        const request = objStore.put( record );
-        request.onsuccess = resolve;
-        request.onerror   = reject;
-    });
+    return reqAsPromise( objStore.put( record ) );
 }
 
 

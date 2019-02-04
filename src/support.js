@@ -16,6 +16,11 @@
 
 /**
  * Log function.
+ * @level   The log level; optional, can be 'error' or 'debug'; used as
+ *          the log message otherwise.
+ * @msg     The log message, when a log level is supplied; otherwise used
+ *          as the first log message argument.
+ * @args    Log message arguments.
  */
 function log( level, msg, ...args ) {
     switch( level ) {
@@ -26,6 +31,9 @@ function log( level, msg, ...args ) {
             msg = '* '+msg;
             break;
         default:
+            // No log level supplied - move the msg arg, if any, to the
+            // list of message arguments, and use the level arg as the
+            // log message.
             if( msg !== undefined ) {
                 args.unshift( msg );
             }

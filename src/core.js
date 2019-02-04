@@ -30,10 +30,7 @@ const { log } = support;
 // Broadcast a message to all service worker clients.
 async function broadcast( message ) {
     const clients = await self.clients.matchAll({ includeUncontrolled: true });
-    // Post message to each client. NOTE: In testing, sometimes null items are
-    // seen in the clients array; don't know why yet, but the code below checks
-    // first that their is a non-null client instance before posting to it.
-    clients.forEach( client => client && client.postMessage( message ) );
+    clients.forEach( client => client.postMessage( message ) );
 }
 
 // A list of URLs to add to the static cache.
