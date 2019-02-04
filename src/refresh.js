@@ -159,7 +159,7 @@ async function refreshOrigin( origin ) {
     // (See comment above for background).
     log('debug','Refresh: Checking for stale commits...');
     await fdbForEach( origin, 'category', '$commit', async ( record ) => {
-        const { _stale, commit } = record;
+        const { _stale, info: { commit } } = record;
         if( _stale ) {
             log('debug','Refresh: Deleting files in stale commit %s...', commit );
             // Iterate over each file in the stale commit and change its status to deleted.
@@ -335,10 +335,10 @@ async function cleanOrigin( origin ) {
     }
     // Prune commit records - delete any commit record with no active file records.
     await fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
-        const { path, commit } = record;
+        const { path, info: { commit } } = record;
         const count = await idbIndexCount('commit', commit, objStore );
-        // Note that the commit record itself will appear in the index count.
-        if( count <= 1 ) {
+        log('debug','commit %s count %d', commit, count );
+        if( count == 0 ) {
             log('debug','Refresh: Deleting commit record for %s...', commit );
             await idbDelete( path, objStore );
         }

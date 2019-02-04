@@ -137,7 +137,7 @@ function idbOpenIndex( index, term, objStore ) {
  * @param objStore  An open object store transaction.
  */
 async function idbIndexCount( index, term, objStore ) {
-    return reqAsPromise( objStore.index( index ).count() );
+    return reqAsPromise( objStore.index( index ).count( term ) );
 }
     
 /**
