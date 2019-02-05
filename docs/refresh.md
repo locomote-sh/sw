@@ -48,7 +48,7 @@ If a latest commit record is available then the procedure next reads the ACM gro
 
 ## 3. Staleing commits before full refresh
 
-If there is no `since` parameter, indicating that a full refresh is needed, then all commit records are marked as stale (by adding the property `"_stale": true` to each record). This is necessary because a full refresh will return only a list of the currently active files within the content origin, meaning that potentially, if there are any files in the current local state of the file db which have since been deleted on the server, then these will remain in the local copy of the file db after the refresh. To avoid this, without completely deleting the local file db copy, all local commit records are marked as 'potentially deleted' (i.e. _stale_) before the refresh. After the refresh, all current commit records will be have been overwritten, loosing their stale status. Any commit records remaining stale after the refresh can then be considered as not part of the active set, and they and any files belonging to those commits can be deleted.
+If there is no `since` parameter, indicating that a full refresh is needed, then all commit records are marked as stale (by adding the property `"_stale": true` to each record). This is necessary because a full refresh will return only a list of the currently active files within the content origin, meaning that potentially, if there are any files in the current local state of the file db which have since been deleted on the server, then these will remain in the local copy of the file db after the refresh. To avoid this, without completely deleting the local file db copy, all local commit records are marked as 'potentially deleted' (i.e. _stale_) before the refresh. After the refresh, all current commit records will have been overwritten, loosing their stale status. Any commit records remaining stale after the refresh can then be considered as not part of the active set, and they and any files belonging to those commits can be deleted.
 
 ## 4. Refresh request
 
@@ -60,7 +60,7 @@ The client reads the ACM group fingerprint record under path `.locomote/acm/grou
 
 ## 6. Delete stale commits and associated files
 
-The client queries the file db for any commit records with `"stale": true` still set. These represent commits which should no longer be in the local copy of the file db (see step 3 above). If and when the client finds a stale commit record, it then queries the file db for any records belonging to that commit, and updates their status to `"deleted"`. These will then be completely removed from the file db during the tidy-up phase (see step 8 below).
+The client queries the file db for any commit records with `"_stale": true` still set. These represent commits which should no longer be in the local copy of the file db (see step 3 above). If and when the client finds a stale commit record, it then queries the file db for any records belonging to that commit, and updates their status to `"deleted"`. These will then be completely removed from the file db during the tidy-up phase (see step 8 below).
 
 ## 7. Fileset downloads
 
