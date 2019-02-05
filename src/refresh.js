@@ -12,57 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/* Category records are stored in the file db as follows:
- * - record: {
- *      category: '$category',
- *      name: `${category}`,
- *      path: `.locomote/category/${category}`
- *   }
- * - the file commit indicates the *latest available* commit for files in that fileset, as
- *   reported in the last previous sync
- * The $group category is a special non-fileset category that represents the acm group
- * - record: {
- *      category: '$category',
- *      name: '$group',
- *      path: `.locomote/category/$group`
- *   }
- * Fingerprint records are stored in the file db as follows:
- * - there is a corresponding fingerprint record for each category
- * - file category: $fingerprint
- * - file path: .locomote/fingerprint/<name>
- * - the file commit indicates the commit of the last downloaded fileset zip
- * When the commit on a fingerprint record doesn't match the commit on the corresponding
- * category record then this indicates that a fileset download (possibly) needs to be done.
- * - note that the category configuration affects whether a download should take place
- * - i.e. the cache setting on the category, although these possibly need to be revisited
- * - should be something like:
- *   - filedb - i.e. content is in the file db
- *   - cache  - i.e. download content and put in cache
- *   - server or none - don't cache in app
- * The fileset download process is:
- * - detect fingerprints not matching their corresponding category record
- * - download and unpack zip
- * - update fingerprint record with category commit
- * There is still a non-understood issue around large downloads, both of the updates feed and
- * fileset downloads:
- * - the updates feed is implemented below as a multi-line json feed
- * - this is good for both streaming, and for chunking (by line) of the response
- * - but not known what the performance characteristics of a large number of updates is
- * - issue is really whether an app would ever fail to update completely because of large change sets
- * - any problem will be more pronounced for fileset downloads
- * - e.g. image filesets have potential to be very large
- * - but ultimately, depends on size of content repo
- * Finally, syncing may also be done against multiple repo backends, so all sync requests need to
- * be queued.
- *
- * Commits:
- * - Stored in the file db
- * - file path: .locomote/commit/<hash>
- * - commit property on the file record it also the commit hash
- * - subject and date properties also on the record
- * - a special commit record indicates the latest commit .locomote/commit/$latest
- */
-
 import {
     idbRead,
     idbWrite,
@@ -98,10 +47,20 @@ async function refreshOrigin( origin ) {
     const latest = await fdbRead( origin, '.locomote/commit/$latest');
     if( latest ) {
         since = latest.commit;
-        log('debug','\u27f3 Latest commit=%s', since );
+        // Check for an ACM group change.
+        log('debug','\u27f3 Checking ACM fingerprint...');
+        const [ group, fingerprint ] = await fdbReadAll( origin, [
+            '.locomote/acm/group',
+            '.locomote/fingerprint/acm/group'
+        ]);
+        if( !group || !fingerprint || group.commit != fingerprint.commit ) {
+            since = undefined;
+            log('debug','\u27f3 ACM group fingerprint change, forcing full refresh');
+        }
+        else log('debug','\u27f3 Latest commit=%s', since );
     }
-    else {
-        log('debug','\u27f3 No latest, staleing commits...');
+    if( !since ) {
+        log('debug','\u27f3 Doing full refresh, staleing commits...');
         // If no latest commit record then it can indicate one of a few sitations:
         // - this is the first refresh and the file db is empty;
         // - the previous refresh failed to complete;
@@ -120,17 +79,6 @@ async function refreshOrigin( origin ) {
             record._stale = true;
             await idbWrite( record, objStore );
         });
-    }
-    // Check for an ACM group change.
-    if( since ) {
-        log('debug','\u27f3 Checking ACM fingerprint...');
-        const [ group, fingerprint ] = await fdbReadAll( origin, [
-            '.locomote/acm/group',
-            '.locomote/fingerprint/acm/group'
-        ]);
-        if( !group || !fingerprint || group.commit != fingerprint.commit ) {
-            since = undefined;
-        }
     }
     // Read refresh implementations from the service worker instance -
     // see core.js for this mapping.
