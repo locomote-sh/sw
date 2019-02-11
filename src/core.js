@@ -18,10 +18,11 @@ import * as support from './support.js';
 import * as streams from './streams.js';
 import * as origin  from './origin.js';
 import * as hooks   from './hooks.js';
-import * as idb     from './idb.js';
-import { query }    from './query.js';
 import { route }    from './router.js';
 import * as refresh from './refresh.js';
+
+import idb   from '@locomote.sh/idb';
+import query from '@locomote.sh/query.api';
 
 const { Origins } = origin;
 
@@ -95,8 +96,8 @@ self.support = support;
 self.streams = streams;
 self.origin  = origin;
 self.hooks   = hooks;
-self.idb     = idb;
-self.query   = query;
+self.idb     = idb( global );
+self.query   = query( self.idb );
 self.refresh = refresh;
 
 // Methods for adding origins.

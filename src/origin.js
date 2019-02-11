@@ -14,17 +14,13 @@
 
 /* Default content origin configuration, and functions for registering configs. */
 
-import { fdbRead } from './idb.js';
-
 import {
     makeErrorResponse,
     makeJSONResponse,
     makeHTMLResponse
 } from './support.js';
 
-import { query } from './query.js';
-
-import { TinyTemper } from './tinytemper.js';
+import { TinyTemper } from '@locomote.sh/tinytemper';
 
 import { log } from './support.js';
 
@@ -39,7 +35,7 @@ const DefaultOrigin = {
         /* File query endpoint. */
         'query.api': async function( request, path, params ) {
             try {
-                const result = await query( this, params );
+                const result = await self.query( this, params );
                 return makeJSONResponse( result );
             }
             catch( e ) {
@@ -143,7 +139,7 @@ async function pageFetch( request, path, params, record ) {
  */
 async function loadPageTemplate( origin, pageType ) {
     const path = `_templates/page-${pageType}.html`;
-    const record = await fdbRead( origin, path );
+    const record = await self.idb.fdbRead( origin, path );
     if( !record ) {
         return undefined;
     }

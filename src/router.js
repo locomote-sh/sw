@@ -15,10 +15,6 @@
 /* Functions for routing and resolving fetch requests against content origins. */
 
 import {
-    fdbRead
-} from './idb.js';
-
-import {
     parseURL,
     extname,
     joinPath,
@@ -63,8 +59,19 @@ async function route( request, origins, staticURLs ) {
  * @param origin    A content origin.
  */
 async function resolve( request, origin ) {
+    // Read origin properties.
+    const { url, dynamics, excluded, _test } = origin;
+    // Always send localhost requests to the server, unless running in test mode.
+    // The assumption here is that localhost requests are going to a locally
+    // running dev server, so we effectively disable the service worker in this
+    // setup to ensure reliable testing.
+    // Test mode is defined with a { "_test": true } setting in the origin config,
+    // and is intended for use by service worker maintainers when doing local
+    // testing of the service worker (i.e. this) code.
+    if( url.startsWith('http://localhost') && !_test ) { 
+        return fetch( request );
+    }
     // Extract request path relative to base URL and query parameters.
-    const { url, dynamics, excluded } = origin;
     const { path, params } = parseURL( request, url );
     // Check whether the path is under a sub-path excluded from the origin.
     if( excluded.some( subPath => path.startsWith( subPath ) ) ) {
@@ -78,10 +85,10 @@ async function resolve( request, origin ) {
     }
     // Read file record for requested path.
     const key = getFDBKey( request, origin, path );
-    const record = await fdbRead( origin, key );
+    const record = await self.idb.fdbRead( origin, key );
     if( record === undefined ) {
         // Check for the latest commit record.
-        const latest = await fdbRead( origin, '.locomote/commit/$latest');
+        const latest = await self.idb.fdbRead( origin, '.locomote/commit/$latest');
         if( latest === undefined ) {
             // No latest record indicates that the local file db isn't
             // synced - delegate the request to the server instead.
