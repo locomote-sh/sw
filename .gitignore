@@ -7,3 +7,6 @@ node_modules
 
 # Build results
 dist
+
+# Temporarily exclude test dir
+test

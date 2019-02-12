@@ -27,6 +27,9 @@ import { log } from './support.js';
 // The list of available origins. */
 const Origins = [];
 
+// The default file DB schema.
+import { Schema } = '@locomote.sh/file.api/lib/schema';
+
 /* The default content origin configuration. */
 const DefaultOrigin = {
 
@@ -61,34 +64,7 @@ const DefaultOrigin = {
     },
 
     /* Database schema. */
-    schema: {
-        version: 1,
-        stores: {
-            'files': {
-                options: {
-                    keyPath: 'path'
-                },
-                indexes: {
-                    'category': {
-                        keyPath: 'category',
-                        options: { unique: false }
-                    },
-                    'status': {
-                        keyPath: 'status',
-                        options: { unique: false }
-                    },
-                    'page-type': {
-                        keyPath: 'page.type',
-                        options: { unique: false }
-                    },
-                    'commit': {
-                        keyPath: 'commit',
-                        options: { unique: false }
-                    }
-                }
-            }
-        }
-    },
+    schema: Schema,
 
     /* Origin configuration settings. */
     settings: {

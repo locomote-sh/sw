@@ -22,7 +22,7 @@ import { route }    from './router.js';
 import * as refresh from './refresh.js';
 
 import idb   from '@locomote.sh/idb';
-import query from '@locomote.sh/query.api';
+import query from '@locomote.sh/file.api';
 
 const { Origins } = origin;
 
