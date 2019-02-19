@@ -19,7 +19,7 @@
   "homepage": "https://github.com/locomote-sh/sw#readme",
   "dependencies": {
     "@locomote.sh/idb": "git+https://github.com/locomote-sh/idb.git",
-    "@locomote.sh/file.api": "git+https://github.com/locomote-sh/file.api.git",
+    "@locomote.sh/query-api": "git+https://github.com/locomote-sh/query-api.git",
     "@locomote.sh/tinytemper": "git+https://github.com/locomote-sh/tinytemper.git"
   },
   "devDependencies": {

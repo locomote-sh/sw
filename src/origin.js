@@ -28,7 +28,7 @@ import { log } from './support.js';
 const Origins = [];
 
 // The default file DB schema.
-import { Schema } = '@locomote.sh/file.api/lib/schema';
+import { Schema } = '@locomote.sh/query-api/lib/schema';
 
 /* The default content origin configuration. */
 const DefaultOrigin = {
