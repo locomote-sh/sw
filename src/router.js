@@ -110,20 +110,21 @@ async function resolve( request, origin ) {
     if( typeof fetcher === 'function' ) {
         return fetcher.apply( origin, [ request, path, params, record ]);
     }
+    let response;
     // Check for a cached response.
     if( cacheName ) {
         // Try to read the request from cache.
-        const response = await caches.match( request );
-        if( response ) {
-            return response;
-        }
+        response = await caches.match( request );
     }
-    // Cache miss, try fetching from network.
-    response = await fetch( request );
-    // Update cache.
-    if( cacheName ) {
-        const cache = await caches.open( cacheName );
-        cache.put( request, response );
+    // Cache miss or no cache.
+    if( !response ) {
+        // Cache miss, try fetching from network.
+        response = await fetch( request );
+        // Update cache.
+        if( cacheName ) {
+            const cache = await caches.open( cacheName );
+            cache.put( request, response );
+        }
     }
     return response;
 }
