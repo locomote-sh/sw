@@ -52,13 +52,11 @@ const DefaultOrigin = {
 
     /* Fileset category definitions. */
     filesets: {
-        'app':           fileset('app', true ),
-        'app/templates': fileset('app/templates', false ),
-        'assets':        fileset('assets', true ),
-        'content/pages': fileset('content/pages', false, pageFetch ),
-        'content/data':  fileset('content/data', false, dataFetch ),
-        'files':         fileset('files', true ),
-        'server':        fileset('server', false )
+        'app':          fileset('app', false ),
+        'server':       fileset('server', false ),
+        'pages':        fileset('pages', true ),
+        'json':         fileset('json', false, dataFetch ),
+        'files':        fileset('files', true )
     },
 
     /* Database schema. */
@@ -84,6 +82,7 @@ const DefaultOrigin = {
  * @param path      The requested file path, relative to the origin.
  * @param params    Request parameters.
  * @param record    The file record.
+ * @deprecated Review of client-rendered pages is needed.
  */
 async function pageFetch( request, path, params, record ) {
     const { page } = record;

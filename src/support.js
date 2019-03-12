@@ -102,7 +102,10 @@ function joinPath( path, ...subpaths ) {
         else if( trailing || leading ) {
             path += subpath;
         }
-        else path += '/'+subpath;
+        else if( path.length > 0 ) {
+            path += '/'+subpath;
+        }
+        else path = subpath;
     }
     return path;
 }
@@ -121,8 +124,8 @@ function makeErrorResponse( path, status ) {
  * @param data  The JSON data.
  */
 function makeJSONResponse( data ) {
-    let body = JSON.stringify( data );
-    let response = new Response( body, {
+    const body = JSON.stringify( data );
+    const response = new Response( body, {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
     });
@@ -135,7 +138,7 @@ function makeJSONResponse( data ) {
  * @param html  The HTML body.
  */
 function makeHTMLResponse( path, html ) {
-    let response = new Response( html, {
+    const response = new Response( html, {
         status: 200,
         headers: { 'Content-Type': 'text/html' }
     });
@@ -180,9 +183,9 @@ function getMIMEType( filename ) {
  * Get a fileset configuration from an origin configuration.
  */
 function getFileset( origin, category ) {
-    let fileset = origin.filesets[category];
+    const fileset = origin.filesets[category];
     if( !fileset ) {
-        throw new Error(`Bad fileset category name ${category}`);
+        throw new Error(`Bad fileset category name '${category}'`);
     }
     return fileset;
 }
