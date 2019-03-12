@@ -15,14 +15,13 @@
 /* Default content origin configuration, and functions for registering configs. */
 
 import {
+    log,
     makeErrorResponse,
     makeJSONResponse,
     makeHTMLResponse
 } from './support.js';
 
-import { TinyTemper } from '@locomote.sh/tinytemper';
-
-import { log } from './support.js';
+import { eval as pageTemplateEval } from '@locomote.sh/tinytemper';
 
 // The list of available origins. */
 const Origins = [];
@@ -32,7 +31,6 @@ import { Schema } from '@locomote.sh/query-api/lib/schema';
 
 /* The default content origin configuration. */
 const DefaultOrigin = {
-
     /* Dynamic request endpoints. */
     dynamics: {
         /* File query endpoint. */
@@ -69,7 +67,8 @@ const DefaultOrigin = {
     /* Origin configuration settings. */
     settings: {
         // Default function for evaluating page templates.
-        pageTemplateEval: TinyTemper.evaluate
+        // (The TinyTemper eval function).
+        pageTemplateEval
     },
 
     /* Excluded sub-paths. */
