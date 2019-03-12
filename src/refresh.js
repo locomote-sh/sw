@@ -21,119 +21,127 @@ import {
     getFileset
 } from './support.js';
 
+const IconWrite  = '\u270e';
+const IconReload = '\u27f3';
+const IconDelete = '\u2704';
+
 /**
  * Refresh the file DB contents against its remote origin.
  * @param origin    A content origin configuration.
  */
 async function refreshOrigin( origin ) {
-
-    log('\u27f3 %s', origin.url );
-    // The hash of the last received update.
-    let since;
-    // First check for a latest commit record.
-    const latest = await self.idb.fdbRead( origin, '.locomote/commit/$latest');
-    if( latest ) {
-        since = latest.commit;
-        // Check for an ACM group change.
-        log('debug','\u27f3 Checking ACM fingerprint...');
-        const [ group, fingerprint ] = await self.idb.fdbReadAll( origin, [
-            '.locomote/acm/group',
-            '.locomote/fingerprint/acm/group'
-        ]);
-        if( !group || !fingerprint || group.commit != fingerprint.commit ) {
-            since = undefined;
-            log('debug','\u27f3 ACM group fingerprint change, forcing full refresh');
-        }
-        else log('debug','\u27f3 Latest commit=%s', since );
-    }
-    if( !since ) {
-        log('debug','\u27f3 Doing full refresh, staleing commits...');
-        // If no latest commit record then it can indicate one of a few sitations:
-        // - this is the first refresh and the file db is empty;
-        // - the previous refresh failed to complete;
-        // - the latest commit record has been deleted somehow;
-        // In either of the last two cases, deleted files may be left on the client.
-        // This happens because given a commit history with two commits, A and B;
-        // and if the client previously synced with commit A, looses the latest
-        // record, and then refreshes against commit B; and if files in A where
-        // deleted in B; then those files won't be included in the refresh against
-        // B, and will remain in the local copy of the filedb.
-        //
-        // Mark each commit record as stale; this is done so that we can detect
-        // any obsolete commits after the record, and delete any files belonging
-        // to those commits.
-        await self.idb.fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
-            record._stale = true;
-            await self.idb.idbWrite( record, objStore );
-        });
-    }
-    // Read refresh implementations from the service worker instance -
-    // see core.js for this mapping.
-    const { _doRefresh, _doFilesetRefresh } = self.refresh;
-    // Refresh the file db.
     try {
-        log('debug','\u27f3 Downloading updates...');
-        await _doRefresh( origin, since );
-    }
-    catch( e ) {
-        log('debug','Error doing refresh', e );
-        return;
-    }
-    // Update the ACM group fingerprint.
-    const objStore = await self.idb.fdbOpenObjStore( origin );
-    let fingerprint = await self.idb.idbRead('.locomote/acm/group', objStore );
-    if( fingerprint ) {
-        log('debug','\u270e Updating ACM fingerprint...');
-        fingerprint = Object.assign( fingerprint, {
-            path:       '.locomote/fingerprint/acm/group',
-            category:   '$fingerprint'
-        });
-        await self.idb.idbWrite( fingerprint, objStore );
-    }
-    // Check for stale commits, and delete any files in those commits.
-    // (See comment above for background).
-    log('debug','\u27f3 Checking for stale commits...');
-    await self.idb.fdbForEach( origin, 'category', '$commit', async ( record ) => {
-        const { _stale, info: { commit } } = record;
-        if( _stale ) {
-            log('debug','\u2704 Deleting files in stale commit %s...', commit );
-            // Iterate over each file in the stale commit and change its status to deleted.
-            // The post-refresh cleanup will then delete the record and remove its associated
-            // file from the cache.
-            await self.idb.fdbForEach( origin, 'commit', commit, ( record, objStore ) => {
-                record.status = 'deleted';
-                return self.idb.idbWrite( record, objStore );
+        log('%s %s', IconReload, origin.url );
+        // The hash of the last received update.
+        let since;
+        // First check for a latest commit record.
+        const latest = await self.idb.fdbRead( origin, '.locomote/commit/$latest');
+        if( latest ) {
+            since = latest.commit;
+            // Check for an ACM group change.
+            log('debug','%s Checking ACM fingerprint...', IconReload );
+            const [ group, fingerprint ] = await self.idb.fdbReadAll( origin, [
+                '.locomote/acm/group',
+                '.locomote/fingerprint/acm/group'
+            ]);
+            if( !group || !fingerprint || group.commit != fingerprint.commit ) {
+                since = undefined;
+                log('debug','%s ACM group fingerprint change, forcing full refresh', IconReload );
+            }
+            else log('debug','%s Latest commit=%s', IconReload , since );
+        }
+        if( !since ) {
+            log('debug','%s Doing full refresh, staleing commits...', IconReload );
+            // If no latest commit record then it can indicate one of a few sitations:
+            // - this is the first refresh and the file db is empty;
+            // - the previous refresh failed to complete;
+            // - the latest commit record has been deleted somehow;
+            // In either of the last two cases, deleted files may be left on the client.
+            // This happens because given a commit history with two commits, A and B;
+            // and if the client previously synced with commit A, looses the latest
+            // record, and then refreshes against commit B; and if files in A where
+            // deleted in B; then those files won't be included in the refresh against
+            // B, and will remain in the local copy of the filedb.
+            //
+            // Mark each commit record as stale; this is done so that we can detect
+            // any obsolete commits after the record, and delete any files belonging
+            // to those commits.
+            await self.idb.fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
+                record._stale = true;
+                await self.idb.idbWrite( record, objStore );
             });
         }
-    });
-    // Check for fileset downloads.
-    log('debug','\u27f3 Checking for fileset downloads...');
-    await self.idb.fdbForEach( origin, 'category', '$category', async ( record ) => {
-        const { commit, name } = record;
-        const path = '.locomote/fingerprint/'+name;
-        let fingerprint = await self.idb.fdbRead( origin, path );
-        if( !fingerprint ) {
-            // Fingerprint record not found so create a new one.
-            fingerprint = { path, name, category: '$fingerprint' };
+        // Read refresh implementations from the service worker instance -
+        // see core.js for this mapping.
+        const { _doRefresh, _doFilesetRefresh } = self.refresh;
+        // Refresh the file db.
+        try {
+            log('debug','%s Downloading updates...', IconReload );
+            await _doRefresh( origin, since );
         }
-        if( fingerprint.commit != commit ) {
-            // Download fileset update.
-            try {
-                log('debug','\u27f3 Downloading updates for fileset %s...', name );
-                await _doFilesetRefresh( origin, name, fingerprint.commit );
-                // Update fingerprint.
-                fingerprint.commit = commit;
-                await self.idb.fdbWrite( origin, fingerprint );
-            }
-            catch( e ) {
-                log('error','Error doing fileset refresh', e );
-            }
+        catch( e ) {
+            log('debug','Error doing refresh', e );
+            return;
         }
-    });
-    // Tidy-up.
-    log('debug','\u27f3 Tidy up');
-    await cleanOrigin( origin );
-    log('debug','\u27f3 Done');
+        // Update the ACM group fingerprint.
+        const objStore = await self.idb.fdbOpenObjStore( origin );
+        let fingerprint = await self.idb.idbRead('.locomote/acm/group', objStore );
+        if( fingerprint ) {
+            log('debug','%s Updating ACM fingerprint...', IconWrite );
+            fingerprint = Object.assign( fingerprint, {
+                path:       '.locomote/fingerprint/acm/group',
+                category:   '$fingerprint'
+            });
+            await self.idb.idbWrite( fingerprint, objStore );
+        }
+        // Check for stale commits, and delete any files in those commits.
+        // (See comment above for background).
+        log('debug','%s Checking for stale commits...', IconReload );
+        await self.idb.fdbForEach( origin, 'category', '$commit', async ( record ) => {
+            const { _stale, info: { commit } } = record;
+            if( _stale ) {
+                log('debug','%s Deleting files in stale commit %s...', IconDelete, commit );
+                // Iterate over each file in the stale commit and change its status to deleted.
+                // The post-refresh cleanup will then delete the record and remove its associated
+                // file from the cache.
+                await self.idb.fdbForEach( origin, 'commit', commit, ( record, objStore ) => {
+                    record.status = 'deleted';
+                    return self.idb.idbWrite( record, objStore );
+                });
+            }
+        });
+        // Check for fileset downloads.
+        log('debug','%s Checking for fileset downloads...', IconReload );
+        await self.idb.fdbForEach( origin, 'category', '$category', async ( record ) => {
+            const { commit, name } = record;
+            const path = '.locomote/fingerprint/'+name;
+            let fingerprint = await self.idb.fdbRead( origin, path );
+            if( !fingerprint ) {
+                // Fingerprint record not found so create a new one.
+                fingerprint = { path, name, category: '$fingerprint' };
+            }
+            if( fingerprint.commit != commit ) {
+                // Download fileset update.
+                try {
+                    log('debug','%s Downloading updates for fileset %s...', IconReload , name );
+                    await _doFilesetRefresh( origin, name, fingerprint.commit );
+                    // Update fingerprint.
+                    fingerprint.commit = commit;
+                    await self.idb.fdbWrite( origin, fingerprint );
+                }
+                catch( e ) {
+                    log('error','Error doing fileset refresh', e );
+                }
+            }
+        });
+        // Tidy-up.
+        log('debug','%s Tidy up', IconReload );
+        await cleanOrigin( origin );
+        log('debug','%s Done', IconReload );
+    }
+    catch( e ) {
+        log('error','Error refreshing origin %s:', origin, e );
+    }
 }
 
 /**
@@ -258,7 +266,7 @@ async function cleanOrigin( origin ) {
         const cache = await caches.open( cacheName );
         // Get the list of deleted items.
         const items = deleted[category];
-        log('debug','\u2704 Deleting %d files from fileset %s...', items.length, category );
+        log('debug','%s Deleting %d files from fileset %s...', IconDelete, items.length, category );
         // Iterate over the deleted items.
         for( const { path, url } of items ) {
             const request = new Request( url );
@@ -274,7 +282,7 @@ async function cleanOrigin( origin ) {
         const count = await self.idb.idbIndexCount('commit', commit, objStore );
         log('debug','commit %s count %d', commit, count );
         if( count == 0 ) {
-            log('debug','\u2704 Deleting commit record for %s...', commit );
+            log('debug','%s Deleting commit record for %s...', IconDelete, commit );
             await self.idb.idbDelete( path, objStore );
         }
     });
