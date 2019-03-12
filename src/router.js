@@ -15,6 +15,7 @@
 /* Functions for routing and resolving fetch requests against content origins. */
 
 import {
+    log,
     parseURL,
     extname,
     joinPath,
@@ -31,23 +32,28 @@ import {
  */
 async function route( request, origins, staticURLs ) {
     const { url } = request;
-    // Try to find the first origin whose url forms a prefix to the request
-    // url. Note that origins are sorted by url length, so any origin found
-    // will be the one with the longest matching prefix.
-    const origin = origins.find( origin => url.startsWith( origin.url ) );
-    if( origin ) {
-        return resolve( request, origin );
-    }
-    // No origin found, check if requesting a statically cached resource.
-    if( staticURLs.includes( url ) ) {
-        const cache = await caches.open('statics');
-        let response = await cache.match( request );
-        if( !response ) {
-            // Cache miss - fetch from network and add to cache.
-            response = await fetch( request );
-            cache.put( request, response );
+    try {
+        // Try to find the first origin whose url forms a prefix to the request
+        // url. Note that origins are sorted by url length, so any origin found
+        // will be the one with the longest matching prefix.
+        const origin = origins.find( origin => url.startsWith( origin.url ) );
+        if( origin ) {
+            return resolve( request, origin );
         }
-        return response;
+        // No origin found, check if requesting a statically cached resource.
+        if( staticURLs.includes( url ) ) {
+            const cache = await caches.open('statics');
+            let response = await cache.match( request );
+            if( !response ) {
+                // Cache miss - fetch from network and add to cache.
+                response = await fetch( request );
+                cache.put( request, response );
+            }
+            return response;
+        }
+    }
+    catch( e ) {
+        log('error','Error routing %s:', url, e );
     }
     // If failed to route then delegate to network.
     return fetch( request );
