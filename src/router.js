@@ -17,8 +17,6 @@
 import {
     log,
     parseURL,
-    extname,
-    joinPath,
     makeErrorResponse,
     makeJSONResponse,
     getFileset
@@ -65,8 +63,16 @@ async function route( request, origins, staticURLs ) {
  * @param origin    A content origin.
  */
 async function resolve( request, origin ) {
+
     // Read origin properties.
-    const { url, dynamics, excluded, _test } = origin;
+    const {
+        url,
+        dynamics,
+        excluded,
+        normalizeRequest,
+        _test
+    } = origin;
+
     // Always send localhost requests to the server, unless running in test mode.
     // The assumption here is that localhost requests are going to a locally
     // running dev server, so we effectively disable the service worker in this
@@ -77,6 +83,9 @@ async function resolve( request, origin ) {
     if( url.startsWith('http://localhost') && !_test ) { 
         return fetch( request );
     }
+    // Normalize the request. This is necessary to ensure that requests for e.g.
+    // '/xxx' and '/xxx/index.html' are mapped to the same file.
+    request = normalizeRequest( request, origin );
     // Extract request path relative to base URL and query parameters.
     const { path, params } = parseURL( request, url );
     // Check whether the path is under a sub-path excluded from the origin.
@@ -90,8 +99,7 @@ async function resolve( request, origin ) {
         return dynamic.apply( origin, [ request, path, params ]);
     }
     // Read file record for requested path.
-    const key = getFDBKey( request, origin, path );
-    const record = await self.idb.fdbRead( origin, key );
+    const record = await self.idb.fdbRead( origin, path );
     if( record === undefined ) {
         // Check for the latest commit record.
         const latest = await self.idb.fdbRead( origin, '.locomote/commit/$latest');
@@ -133,26 +141,6 @@ async function resolve( request, origin ) {
         }
     }
     return response;
-}
-
-/**
- * Return the file db record key for a request. Normally this is the path
- * of the request, but when a path references a directory instead of a
- * specific file (e.g. 'docs/') then a filename needs to be appended before
- * trying to match a record in the file db. This implementation works by
- * checking for a file extension on the request path, and if none is found
- * then appends 'index.html' to the path; so e.g. 'docs/' (or 'docs') won't
- * have a file extension and so the key returned will be 'docs/index.html'.
- * Future implementations may support more complex content negotation logic.
- * @param request   A file request.
- * @param origin    The content origin the file belongs to.
- * @param path      The file path presented in the request.
- */
-function getFDBKey( request, origin, path ) {
-    if( extname( path ) ) {
-        return path;
-    }
-    return joinPath( path, 'index.html');
 }
 
 export { route };

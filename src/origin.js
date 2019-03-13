@@ -16,6 +16,8 @@
 
 import {
     log,
+    extname,
+    joinPath,
     makeErrorResponse,
     makeJSONResponse,
     makeHTMLResponse
@@ -31,6 +33,7 @@ import { Schema } from '@locomote.sh/query-api/lib/schema';
 
 /* The default content origin configuration. */
 const DefaultOrigin = {
+
     /* Dynamic request endpoints. */
     dynamics: {
         /* File query endpoint. */
@@ -62,8 +65,28 @@ const DefaultOrigin = {
     /* Database schema. */
     schema: Schema,
 
+    /* Normalize a request. This is necessary to ensure proper caching
+     * and retrieval of files. Detects directory requests (as any
+     * request path without a file extension) and modifies the request
+     * by appending index.html to the path.
+     */
+    normalizeRequest( request, origin ) {
+        let { url } = request;
+        if( !extname( url ) ) {
+            const { settings: { indexFileName } } = origin;
+            url = joinPath( url, indexFileName );
+            // Create a copy of the request with the modified path.
+            // Note that we only copy the request method, body and headers here.
+            const { method, body, headers } = request;
+            request = new Request( url, { method, body, headers });
+        }
+        return request;
+    },
+
     /* Origin configuration settings. */
     settings: {
+        // Default filename for index files.
+        indexFileName: 'index.html',
         // Default function for evaluating page templates.
         // (The TinyTemper eval function).
         pageTemplateEval
@@ -189,7 +212,9 @@ function initOrigin( config ) {
         filesets,
         settings,
         schema,
-        excluded = [] 
+        normalizeRequest = DefaultOrigin.normalizeRequest,
+        excluded         = [],
+        _test            = false
     } = config;
     // Ensure we have a content URL.
     if( !url ) {
@@ -207,14 +232,20 @@ function initOrigin( config ) {
     //   config's settings.
     // - The DB schemas are merged according to the method described in
     //   the mergeDBSchema() function.
+    // - A function for normalizing requests can be supplied which overrides
+    //   the default.
     // - Excluded sub-paths are used as is.
+    // - A flag indicating whether to run the origin in test mode can be
+    //   supplied.
     return {
         url:        url,
         dynamics:   Object.assign( {}, DefaultOrigin.dynamics, dynamics ),
         filesets:   Object.assign( {}, DefaultOrigin.filesets, filesets ),
         settings:   Object.assign( {}, DefaultOrigin.settings, settings ),
         schema:     mergeDBSchema( DefaultOrigin.schema, schema ),
-        excluded
+        normalizeRequest,
+        excluded,
+        _test
     };
 }
 
