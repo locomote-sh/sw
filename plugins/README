@@ -1,1 +1,6 @@
 Service worker plugins.
+
+Contents:
+
+search.js           Full text search.
+zipped-filesets/    Single zip file download of fileset contents.

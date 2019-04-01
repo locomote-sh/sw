@@ -32,8 +32,8 @@ async function route( request, origins, staticURLs ) {
     const { url } = request;
     try {
         // Try to find the first origin whose url forms a prefix to the request
-        // url. Note that origins are sorted by url length, so any origin found
-        // will be the one with the longest matching prefix.
+        // url. Note that origins are sorted by descending url length, so any 
+        // origin found will be the one with the longest matching prefix.
         const origin = origins.find( origin => url.startsWith( origin.url ) );
         if( origin ) {
             return resolve( request, origin );
@@ -111,11 +111,11 @@ async function resolve( request, origin ) {
         return makeErrorResponse( path, 404 );
     }
     // Check for a deleted file - this should only happen during a content refresh.
-    if( record.status == 'deleted' ) {
+    if( record.status === 'deleted' ) {
         return makeErrorResponse( path, 404 );
     }
     // Check whether to return the file record.
-    if( params.get('format') == 'record' ) {
+    if( params.get('format') === 'record' ) {
         return makeJSONResponse( record );
     }
     // Read the fileset configuration.
