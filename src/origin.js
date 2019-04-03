@@ -39,7 +39,8 @@ const DefaultOrigin = {
         /* File query endpoint. */
         'query.api': async function( request, path, params ) {
             try {
-                const result = await self.query( this, params );
+                const { schema } = this;
+                const result = await self.query( schema, params );
                 return makeJSONResponse( result );
             }
             catch( e ) {
