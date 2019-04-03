@@ -46,9 +46,8 @@ function init( global ) {
      * @param mode      The transaction mode; defaults to 'readonly'.
      */
     function fdbOpenObjStore( origin, mode = 'readwrite' ) {
-        const { schema, url } = origin;
-        const { name = url } = schema;
-        return idbOpenObjStore( name, schema, 'files', mode );
+        const { schema } = origin;
+        return idbOpenObjStore( schema, 'files', mode );
     }
 
     /**
