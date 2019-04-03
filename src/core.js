@@ -21,8 +21,8 @@ import * as hooks   from './hooks.js';
 import { route }    from './router.js';
 import * as refresh from './refresh.js';
 
-import idb   from '@locomote.sh/idb';
-import query from '@locomote.sh/query-api';
+import fdb from './fdb.js';
+import query from '@locomote.sh/query-api/lib/query.js';
 
 const { Origins } = origin;
 
@@ -96,8 +96,8 @@ self.support = support;
 self.streams = streams;
 self.origin  = origin;
 self.hooks   = hooks;
-self.idb     = idb( global );
-self.query   = query( self.idb );
+self.fdb     = fdb( global );
+self.query   = query( self.fdb );
 self.refresh = refresh;
 
 // Methods for adding origins.

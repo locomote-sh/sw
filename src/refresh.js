@@ -35,12 +35,12 @@ async function refreshOrigin( origin ) {
         // The hash of the last received update.
         let since;
         // First check for a latest commit record.
-        const latest = await self.idb.fdbRead( origin, '.locomote/commit/$latest');
+        const latest = await self.fdb.fdbRead( origin, '.locomote/commit/$latest');
         if( latest ) {
             since = latest.commit;
             // Check for an ACM group change.
             log('debug','%s Checking ACM fingerprint...', IconReload );
-            const [ group, fingerprint ] = await self.idb.fdbReadAll( origin, [
+            const [ group, fingerprint ] = await self.fdb.fdbReadAll( origin, [
                 '.locomote/acm/group',
                 '.locomote/fingerprint/acm/group'
             ]);
@@ -66,9 +66,9 @@ async function refreshOrigin( origin ) {
             // Mark each commit record as stale; this is done so that we can detect
             // any obsolete commits after the record, and delete any files belonging
             // to those commits.
-            await self.idb.fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
+            await self.fdb.fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
                 record._stale = true;
-                await self.idb.idbWrite( record, objStore );
+                await self.fdb.idbWrite( record, objStore );
             });
         }
         // Read refresh implementations from the service worker instance -
@@ -84,38 +84,38 @@ async function refreshOrigin( origin ) {
             return;
         }
         // Update the ACM group fingerprint.
-        const objStore = await self.idb.fdbOpenObjStore( origin );
-        let fingerprint = await self.idb.idbRead('.locomote/acm/group', objStore );
+        const objStore = await self.fdb.fdbOpenObjStore( origin );
+        let fingerprint = await self.fdb.idbRead('.locomote/acm/group', objStore );
         if( fingerprint ) {
             log('debug','%s Updating ACM fingerprint...', IconWrite );
             fingerprint = Object.assign( fingerprint, {
                 path:       '.locomote/fingerprint/acm/group',
                 category:   '$fingerprint'
             });
-            await self.idb.idbWrite( fingerprint, objStore );
+            await self.fdb.idbWrite( fingerprint, objStore );
         }
         // Check for stale commits, and delete any files in those commits.
         // (See comment above for background).
         log('debug','%s Checking for stale commits...', IconReload );
-        await self.idb.fdbForEach( origin, 'category', '$commit', async ( record ) => {
+        await self.fdb.fdbForEach( origin, 'category', '$commit', async ( record ) => {
             const { _stale, info: { commit } } = record;
             if( _stale ) {
                 log('debug','%s Deleting files in stale commit %s...', IconDelete, commit );
                 // Iterate over each file in the stale commit and change its status to deleted.
                 // The post-refresh cleanup will then delete the record and remove its associated
                 // file from the cache.
-                await self.idb.fdbForEach( origin, 'commit', commit, ( record, objStore ) => {
+                await self.fdb.fdbForEach( origin, 'commit', commit, ( record, objStore ) => {
                     record.status = 'deleted';
-                    return self.idb.idbWrite( record, objStore );
+                    return self.fdb.idbWrite( record, objStore );
                 });
             }
         });
         // Check for fileset downloads.
         log('debug','%s Checking for fileset downloads...', IconReload );
-        await self.idb.fdbForEach( origin, 'category', '$category', async ( record ) => {
+        await self.fdb.fdbForEach( origin, 'category', '$category', async ( record ) => {
             const { commit, name } = record;
             const path = '.locomote/fingerprint/'+name;
-            let fingerprint = await self.idb.fdbRead( origin, path );
+            let fingerprint = await self.fdb.fdbRead( origin, path );
             if( !fingerprint ) {
                 // Fingerprint record not found so create a new one.
                 fingerprint = { path, name, category: '$fingerprint' };
@@ -127,7 +127,7 @@ async function refreshOrigin( origin ) {
                     await _doFilesetRefresh( origin, name, fingerprint.commit );
                     // Update fingerprint.
                     fingerprint.commit = commit;
-                    await self.idb.fdbWrite( origin, fingerprint );
+                    await self.fdb.fdbWrite( origin, fingerprint );
                 }
                 catch( e ) {
                     log('error','Error doing fileset refresh', e );
@@ -178,7 +178,7 @@ async function _doRefresh( origin, since ) {
             // Call the update hook.
             value = await updateHook( origin, value );
             // Write to file DB.
-            await self.idb.fdbWrite( origin, value );
+            await self.fdb.fdbWrite( origin, value );
         }
     }
 }
@@ -242,7 +242,7 @@ async function _doFilesetRefresh( origin, category, since ) {
 async function cleanOrigin( origin ) {
     // Iterate over deleted records, build lists of items to delete by category.
     const deleted = {};
-    await self.idb.fdbForEach( origin, 'status','deleted', record => {
+    await self.fdb.fdbForEach( origin, 'status','deleted', record => {
         // Read values from the record.
         const { path, category } = record;
         // Construct a request URL.
@@ -273,17 +273,17 @@ async function cleanOrigin( origin ) {
             // Delete from the cache.
             cache.delete( request );
             // Delete the object store record.
-            await self.idb.fdbDelete( origin, path );
+            await self.fdb.fdbDelete( origin, path );
         }
     }
     // Prune commit records - delete any commit record with no active file records.
-    await self.idb.fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
+    await self.fdb.fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
         const { path, info: { commit } } = record;
-        const count = await self.idb.idbIndexCount('commit', commit, objStore );
+        const count = await self.fdb.idbIndexCount('commit', commit, objStore );
         log('debug','commit %s count %d', commit, count );
         if( count == 0 ) {
             log('debug','%s Deleting commit record for %s...', IconDelete, commit );
-            await self.idb.idbDelete( path, objStore );
+            await self.fdb.idbDelete( path, objStore );
         }
     });
 }

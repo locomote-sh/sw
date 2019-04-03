@@ -1,6 +1,6 @@
 {
   "name": "sw",
-  "version": "0.8.10",
+  "version": "0.8.11",
   "description": "Service worker.",
   "main": "webpack.config.js",
   "scripts": {

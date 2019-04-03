@@ -136,7 +136,7 @@ async function pageFetch( request, path, params, record ) {
  */
 async function loadPageTemplate( origin, pageType ) {
     const path = `_templates/page-${pageType}.html`;
-    const record = await self.idb.fdbRead( origin, path );
+    const record = await self.fdb.fdbRead( origin, path );
     if( !record ) {
         return undefined;
     }
