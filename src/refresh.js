@@ -68,7 +68,7 @@ async function refreshOrigin( origin ) {
             // to those commits.
             await self.fdb.fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
                 record._stale = true;
-                await self.fdb.idbWrite( record, objStore );
+                await self.fdb.idbWrite( objStore, record );
             });
         }
         // Read refresh implementations from the service worker instance -
@@ -85,14 +85,14 @@ async function refreshOrigin( origin ) {
         }
         // Update the ACM group fingerprint.
         const objStore = await self.fdb.fdbOpenObjStore( origin );
-        let fingerprint = await self.fdb.idbRead('.locomote/acm/group', objStore );
+        let fingerprint = await self.fdb.idbRead( objStore, '.locomote/acm/group');
         if( fingerprint ) {
             log('debug','%s Updating ACM fingerprint...', IconWrite );
             fingerprint = Object.assign( fingerprint, {
                 path:       '.locomote/fingerprint/acm/group',
                 category:   '$fingerprint'
             });
-            await self.fdb.idbWrite( fingerprint, objStore );
+            await self.fdb.idbWrite( objStore, fingerprint );
         }
         // Check for stale commits, and delete any files in those commits.
         // (See comment above for background).
@@ -106,7 +106,7 @@ async function refreshOrigin( origin ) {
                 // file from the cache.
                 await self.fdb.fdbForEach( origin, 'commit', commit, ( record, objStore ) => {
                     record.status = 'deleted';
-                    return self.fdb.idbWrite( record, objStore );
+                    return self.fdb.idbWrite( objStore, record );
                 });
             }
         });
@@ -279,11 +279,11 @@ async function cleanOrigin( origin ) {
     // Prune commit records - delete any commit record with no active file records.
     await self.fdb.fdbForEach( origin, 'category', '$commit', async ( record, objStore ) => {
         const { path, info: { commit } } = record;
-        const count = await self.fdb.idbIndexCount('commit', commit, objStore );
+        const count = await self.fdb.idbIndexCount( objStore, 'commit', commit );
         log('debug','commit %s count %d', commit, count );
         if( count == 0 ) {
             log('debug','%s Deleting commit record for %s...', IconDelete, commit );
-            await self.fdb.idbDelete( path, objStore );
+            await self.fdb.idbDelete( objStore, path );
         }
     });
 }

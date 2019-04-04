@@ -39,8 +39,7 @@ const DefaultOrigin = {
         /* File query endpoint. */
         'query.api': async function( request, path, params ) {
             try {
-                const { schema } = this;
-                const result = await self.query( schema, params );
+                const result = await self.fdb.fdbQuery( this, params );
                 return makeJSONResponse( result );
             }
             catch( e ) {

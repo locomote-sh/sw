@@ -20,9 +20,7 @@ import * as origin  from './origin.js';
 import * as hooks   from './hooks.js';
 import { route }    from './router.js';
 import * as refresh from './refresh.js';
-
-import fdb from './fdb.js';
-import query from '@locomote.sh/query-api/lib/query.js';
+import fdb          from './fdb.js';
 
 const { Origins } = origin;
 
@@ -97,7 +95,6 @@ self.streams = streams;
 self.origin  = origin;
 self.hooks   = hooks;
 self.fdb     = fdb( global );
-self.query   = query( self.fdb );
 self.refresh = refresh;
 
 // Methods for adding origins.

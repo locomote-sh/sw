@@ -16,7 +16,7 @@
 
 /* Functions for working with the Locomote.sh file DB. */
 
-import idb from '@locomote.sh/idb';
+import initQueryAPI from '@locomote.sh/query-api/lib/browser';
 
 /**
  * Initialize the file DB API.
@@ -27,18 +27,33 @@ import idb from '@locomote.sh/idb';
 function init( global ) {
 
     const {
-        indexedDB,
-        IDBKeyRange,
-        idbOpen,
-        idbOpenObjStore,
-        idbRead,
-        idbReadAll,
-        idbWrite,
-        idbDelete,
-        idbOpenPK,
-        idbOpenIndex,
-        idbIndexCount
-    } = idb( global );
+        query,
+        idb: {
+            indexedDB,
+            IDBKeyRange,
+            idbOpen,
+            idbOpenObjStore,
+            idbRead,
+            idbReadAll,
+            idbWrite,
+            idbDelete,
+            idbOpenPK,
+            idbOpenIndex,
+            idbIndexCount
+        }
+    } = initQueryAPI( global );
+
+    const ObjStoreName = 'files';
+
+    /**
+     * Query the file object store.
+     * @param origin    The content origin configuration.
+     * @param params    The query parameters.
+     */
+    function fdbQuery( origin, params ) {
+        const { schema } = origin;
+        return query( schema, ObjStoreName, params );
+    }
 
     /**
      * Open the file object store.
@@ -47,7 +62,7 @@ function init( global ) {
      */
     function fdbOpenObjStore( origin, mode = 'readwrite' ) {
         const { schema } = origin;
-        return idbOpenObjStore( schema, 'files', mode );
+        return idbOpenObjStore( schema, ObjStoreName, mode );
     }
 
     /**
@@ -85,7 +100,7 @@ function init( global ) {
      */
     async function fdbRead( origin, path ) {
         const objStore = await fdbOpenObjStore( origin );
-        return idbRead( path, objStore );
+        return idbRead( objStore, path );
     }
 
     /**
@@ -95,7 +110,7 @@ function init( global ) {
      */
     async function fdbReadAll( origin, paths ) {
         const objStore = await fdbOpenObjStore( origin );
-        return idbReadAll( paths, objStore );
+        return idbReadAll( objStore, paths );
     }
 
     /**
@@ -105,7 +120,7 @@ function init( global ) {
      */
     async function fdbDelete( origin, path ) {
         const objStore = await fdbOpenObjStore( origin, 'readwrite');
-        return idbDelete( path, objStore );
+        return idbDelete( objStore, path );
     }
 
     /**
@@ -121,6 +136,7 @@ function init( global ) {
     return {
         indexedDB,
         IDBKeyRange,
+
         idbOpen,
         idbOpenObjStore,
         idbRead,
@@ -130,6 +146,8 @@ function init( global ) {
         idbOpenPK,
         idbOpenIndex,
         idbIndexCount,
+
+        fdbQuery,
         fdbOpenObjStore,
         fdbForEach,
         fdbRead,
