@@ -84,27 +84,26 @@ async function refreshOrigin( origin ) {
             return;
         }
         // Update the ACM group fingerprint.
-        const objStore = await self.fdb.fdbOpenObjStore( origin );
-        let fingerprint = await self.fdb.idbRead( objStore, '.locomote/acm/group');
+        let fingerprint = await self.fdb.fdbRead( origin, '.locomote/acm/group');
         if( fingerprint ) {
             log('debug','%s Updating ACM fingerprint...', IconWrite );
             fingerprint = Object.assign( fingerprint, {
                 path:       '.locomote/fingerprint/acm/group',
                 category:   '$fingerprint'
             });
-            await self.fdb.idbWrite( objStore, fingerprint );
+            await self.fdb.fdbWrite( origin, fingerprint );
         }
         // Check for stale commits, and delete any files in those commits.
         // (See comment above for background).
         log('debug','%s Checking for stale commits...', IconReload );
-        await self.fdb.fdbForEach( origin, 'category', '$commit', async ( record ) => {
+        await self.fdb.fdbForEach( origin, 'category', '$commit', record => {
             const { _stale, info: { commit } } = record;
             if( _stale ) {
                 log('debug','%s Deleting files in stale commit %s...', IconDelete, commit );
                 // Iterate over each file in the stale commit and change its status to deleted.
                 // The post-refresh cleanup will then delete the record and remove its associated
                 // file from the cache.
-                await self.fdb.fdbForEach( origin, 'commit', commit, ( record, objStore ) => {
+                return self.fdb.fdbForEach( origin, 'commit', commit, ( record, objStore ) => {
                     record.status = 'deleted';
                     return self.fdb.idbWrite( objStore, record );
                 });
@@ -283,7 +282,7 @@ async function cleanOrigin( origin ) {
         log('debug','commit %s count %d', commit, count );
         if( count == 0 ) {
             log('debug','%s Deleting commit record for %s...', IconDelete, commit );
-            await self.fdb.idbDelete( objStore, path );
+            await self.fdb.fdbDelete( origin, path );
         }
     });
 }

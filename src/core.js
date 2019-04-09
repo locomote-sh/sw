@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import { version } from '../package.json';
+
 /* Core service worker functionality. */
 
 import * as support from './support.js';
@@ -67,7 +69,7 @@ async function refreshStatics() {
  */
 async function install() {
     try {
-        log('Starting installation');
+        log('Installing version %s...', version );
         // Refresh all content origins.
         await refreshContent();
         // Clear out any previously cached statics.
@@ -86,8 +88,10 @@ async function install() {
  */
 async function activate() {
     await clients.claim();
-    log('Choo choo!');
+    log('Choo choo! Running version %s', version );
 }
+
+self.version = version;
 
 // Sub-module export for plugin support.
 self.support = support;

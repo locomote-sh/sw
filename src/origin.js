@@ -29,7 +29,7 @@ import { eval as pageTemplateEval } from '@locomote.sh/tinytemper';
 const Origins = [];
 
 // The default file DB schema.
-import { Schema } from '@locomote.sh/query-api/lib/schema';
+import { Schema } from '@locomote.sh/query-api/lib/locomote/schema';
 
 /* The default content origin configuration. */
 const DefaultOrigin = {
@@ -61,9 +61,6 @@ const DefaultOrigin = {
         'json':         fileset('json', false, dataFetch ),
         'files':        fileset('files', true )
     },
-
-    /* Database schema. */
-    schema: Schema,
 
     /* Normalize a request. This is necessary to ensure proper caching
      * and retrieval of files. Detects directory requests (as any
@@ -203,7 +200,8 @@ function initOrigin( config ) {
     // origin with the default configuration.
     if( typeof config == 'string' ) {
         const url = normOriginURL( config );
-        return Object.assign({ url }, DefaultOrigin );
+        const schema = Object.assign({ name: url }, Schema );
+        return Object.assign({ url, schema }, DefaultOrigin );
     }
     // Read configuration properties.
     let {
@@ -238,11 +236,11 @@ function initOrigin( config ) {
     // - A flag indicating whether to run the origin in test mode can be
     //   supplied.
     return {
-        url:        url,
+        url,
         dynamics:   Object.assign( {}, DefaultOrigin.dynamics, dynamics ),
         filesets:   Object.assign( {}, DefaultOrigin.filesets, filesets ),
         settings:   Object.assign( {}, DefaultOrigin.settings, settings ),
-        schema:     mergeDBSchema( DefaultOrigin.schema, schema ),
+        schema:     mergeDBSchema( Schema, schema, url ),
         normalizeRequest,
         excluded,
         _test
@@ -253,14 +251,17 @@ function initOrigin( config ) {
  * Merge two database schemas.
  * @param s1    A database schema (required).
  * @param s2    A database schema (optional).
+ * @param name  The database name.
  */
-function mergeDBSchema( s1, s2 ) {
-    // If only one argument then return it as the result.
+function mergeDBSchema( s1, s2, name ) {
+    // If only one argument then return a copy of it with the name
+    // property.
     if( s2 === undefined ) {
-        return s1;
+        return Object.assign({ name }, s1 );
     }
     // Initialize result with properties from first schema.
-    const result = Object.assign( {}, s1 );
+    // Note database name added to the schema here.
+    const result = Object.assign({ name }, s1 );
     const { version, stores } = s2;
     // Ensure second schema has required values.
     if( version === undefined ) {
@@ -272,7 +273,7 @@ function mergeDBSchema( s1, s2 ) {
     // Overwrite schema version with value;
     result.version = version;
     // Merge object store definitions.
-    result.stores = Object.assign( {}, s1.stores, stores );
+    result.stores = Object.assign({}, s1.stores, stores );
     return result;
 }
 

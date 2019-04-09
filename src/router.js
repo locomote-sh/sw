@@ -36,7 +36,13 @@ async function route( request, origins, staticURLs ) {
         // origin found will be the one with the longest matching prefix.
         const origin = origins.find( origin => url.startsWith( origin.url ) );
         if( origin ) {
-            return resolve( request, origin );
+            // NOTE important to do an await here rather than returning the
+            // resolve() result directly; this is to ensure that any exception
+            // thrown within resolve() is captured and handled within this
+            // function's try/catch, rather than returned unhandled to the
+            // calling function.
+            const response = await resolve( request, origin );
+            return response;
         }
         // No origin found, check if requesting a statically cached resource.
         if( staticURLs.includes( url ) ) {
