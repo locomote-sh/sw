@@ -51,7 +51,7 @@ async function route( request, origins, staticURLs ) {
             if( !response ) {
                 // Cache miss - fetch from network and add to cache.
                 response = await fetch( request );
-                cache.put( request, response );
+                cache.put( request, response.clone() );
             }
             return response;
         }
@@ -143,7 +143,7 @@ async function resolve( request, origin ) {
         // Update cache.
         if( cacheName ) {
             const cache = await caches.open( cacheName );
-            cache.put( request, response );
+            cache.put( request, response.clone() );
         }
     }
     return response;
