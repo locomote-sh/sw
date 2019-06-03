@@ -39,9 +39,6 @@ const DefaultOrigin = {
         /* File query endpoint. */
         'query.api': async function( request, path, params ) {
             try {
-                /*
-                const result = await self.fdb.fdbQuery( this, params );
-                */
                 const result = this.fdb.query( params );
                 return makeJSONResponse( result );
             }
@@ -136,9 +133,6 @@ async function pageFetch( request, path, params, record ) {
  */
 async function loadPageTemplate( origin, pageType ) {
     const path = `_templates/page-${pageType}.html`;
-    /*
-    const record = await self.fdb.fdbRead( origin, path );
-    */
     const record = await origin.fdb.read( path );
     if( !record ) {
         return undefined;
@@ -242,7 +236,6 @@ function _initOriginFromConfig( config ) {
     //   supplied.
     return {
         url,
-        fdb,
         dynamics:   Object.assign( {}, DefaultOrigin.dynamics, dynamics ),
         filesets:   Object.assign( {}, DefaultOrigin.filesets, filesets ),
         settings:   Object.assign( {}, DefaultOrigin.settings, settings ),
@@ -265,6 +258,7 @@ function initOrigin( config ) {
         ? _initOriginFromURL( config )
         : _initOriginFromConfig( config );
     // Connect to the origin's file DB.
+    // Note that this adds an 'fdb' property to each origin.
     origin._connected = self.fdb.connect( origin ).then( fdb => origin.fdb = fdb );
     return origin;
 }
