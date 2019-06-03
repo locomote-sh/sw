@@ -39,7 +39,10 @@ const DefaultOrigin = {
         /* File query endpoint. */
         'query.api': async function( request, path, params ) {
             try {
+                /*
                 const result = await self.fdb.fdbQuery( this, params );
+                */
+                const result = this.fdb.query( params );
                 return makeJSONResponse( result );
             }
             catch( e ) {
@@ -133,7 +136,10 @@ async function pageFetch( request, path, params, record ) {
  */
 async function loadPageTemplate( origin, pageType ) {
     const path = `_templates/page-${pageType}.html`;
+    /*
     const record = await self.fdb.fdbRead( origin, path );
+    */
+    const record = await origin.fdb.read( path );
     if( !record ) {
         return undefined;
     }
@@ -189,36 +195,35 @@ function normOriginURL( url ) {
 }
 
 /**
- * Initialize a content origin configuration.
- * @param config    A content origin configuration, can be either:
- *                  - A string specifying a content origin URL; the
- *                    the default origin configuration is used.
- *                  - A complete content origin configuration.
+ * Initialize an origin from a content origin URL.
  */
-function initOrigin( config ) {
-    // If configuration is a string then use this as the URL of a content
-    // origin with the default configuration.
-    if( typeof config == 'string' ) {
-        const url = normOriginURL( config );
-        const schema = Object.assign({ name: url }, Schema );
-        return Object.assign({ url, schema }, DefaultOrigin );
+function _initOriginFromURL( _url ) {
+    const url = normOriginURL( _url );
+    const schema = Object.assign({ name: url }, Schema );
+    return Object.assign({ url, schema }, DefaultOrigin );
+}
+
+/**
+ * Initialize an origin from an origin configuration object.
+ */
+function _initOriginFromConfig( config ) {
+    // Ensure we have a content URL.
+    if( !config.url ) {
+        throw new Error('Content origin configuration must specify a URL');
     }
-    // Read configuration properties.
-    let {
-        url,
+    // Normalize the origin URL.
+    const url = normOriginURL( config.url );
+    // Merge schema config in with defaults.
+    const schema = mergeDBSchema( Schema, config.schema, url );
+    // Read other configuration properties.
+    const {
         dynamics,
         filesets,
         settings,
-        schema,
         normalizeRequest = DefaultOrigin.normalizeRequest,
         excluded         = [],
         _test            = false
     } = config;
-    // Ensure we have a content URL.
-    if( !url ) {
-        throw new Error('Content origin configuration must specify a URL');
-    }
-    url = normOriginURL( url );
     // Following code implements a targeted merge of the custom origin's
     // configuration over the default configuration.
     // - The custom configuration URL is always copied to the result.
@@ -237,6 +242,7 @@ function initOrigin( config ) {
     //   supplied.
     return {
         url,
+        fdb,
         dynamics:   Object.assign( {}, DefaultOrigin.dynamics, dynamics ),
         filesets:   Object.assign( {}, DefaultOrigin.filesets, filesets ),
         settings:   Object.assign( {}, DefaultOrigin.settings, settings ),
@@ -245,6 +251,22 @@ function initOrigin( config ) {
         excluded,
         _test
     };
+}
+
+/**
+ * Initialize a content origin configuration.
+ * @param config    A content origin configuration, can be either:
+ *                  - A string specifying a content origin URL; the
+ *                    the default origin configuration is used.
+ *                  - A complete content origin configuration.
+ */
+function initOrigin( config ) {
+    const origin = typeof config == 'string'
+        ? _initOriginFromURL( config )
+        : _initOriginFromConfig( config );
+    // Connect to the origin's file DB.
+    origin._connected = self.fdb.connect( origin ).then( fdb => origin.fdb = fdb );
+    return origin;
 }
 
 /**
@@ -333,9 +355,17 @@ function addOrigins( origins ) {
     origins.forEach( addOrigin );
 }
 
+/**
+ * Wait until all origins are connected and ready to handle requests.
+ */
+function ready() {
+    return Promise.all( Origins.map( o => o._connected ) );
+}
+
 export {
     Origins,
     DefaultOrigin,
     addOrigin,
-    addOrigins
+    addOrigins,
+    ready 
 };

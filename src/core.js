@@ -70,6 +70,8 @@ async function refreshStatics() {
 async function install() {
     try {
         log('Installing version %s...', version );
+        // Wait for origins to be ready.
+        await origin.ready();
         // Refresh all content origins.
         await refreshContent();
         // Clear out any previously cached statics.
@@ -87,6 +89,9 @@ async function install() {
  * Activate the service worker.
  */
 async function activate() {
+    // Wait for orgins to be ready.
+    await origin.ready();
+    // Connect to page clients.
     await clients.claim();
     log('Choo choo! Running version %s', version );
 }

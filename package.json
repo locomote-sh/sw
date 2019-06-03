@@ -1,6 +1,6 @@
 {
   "name": "sw",
-  "version": "0.8.14",
+  "version": "0.8.15",
   "description": "Service worker.",
   "main": "webpack.config.js",
   "scripts": {
@@ -18,8 +18,8 @@
   },
   "homepage": "https://github.com/locomote-sh/sw#readme",
   "dependencies": {
-    "@locomote.sh/idb": "^1.1.1",
-    "@locomote.sh/query-api": "^0.8.9",
+    "@locomote.sh/idb": "^2.0.0",
+    "@locomote.sh/query-api": "^0.8.12",
     "@locomote.sh/tinytemper": "git+https://github.com/locomote-sh/tinytemper.git"
   },
   "devDependencies": {
