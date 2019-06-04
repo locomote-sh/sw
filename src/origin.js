@@ -39,7 +39,7 @@ const DefaultOrigin = {
         /* File query endpoint. */
         'query.api': async function( request, path, params ) {
             try {
-                const result = this.fdb.query( params );
+                const result = await this.fdb.query( params );
                 return makeJSONResponse( result );
             }
             catch( e ) {
