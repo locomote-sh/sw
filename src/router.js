@@ -93,9 +93,12 @@ async function resolve( request, origin ) {
     // '/xxx' and '/xxx/index.html' are mapped to the same file.
     request = normalizeRequest( request, origin );
     // Extract request path relative to base URL and query parameters.
+    // NOTE: A parameter like $remote=true on the request will force the router to
+    // fetch the request from the remote server instead of routing through the
+    // service worker.
     const { path, params } = parseURL( request, url );
     // Check whether the path is under a sub-path excluded from the origin.
-    if( excluded.some( subPath => path.startsWith( subPath ) ) ) {
+    if( params.$remote || excluded.some( subPath => path.startsWith( subPath ) ) ) {
         // Delegate request to network.
         return fetch( request );
     }
