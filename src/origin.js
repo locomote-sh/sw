@@ -39,7 +39,29 @@ const DefaultOrigin = {
         /* File query endpoint. */
         'query.api': async function( request, path, params ) {
             try {
-                const result = await this.fdb.query( params );
+                const fdb = await this.fdb;
+
+                // Attempted workaround for https://bugs.webkit.org/show_bug.cgi?id=190269
+                // When a PWA is added to the homescreen on iOS, the service worker is kept
+                // (i.e. it doesn't need to be re-installed), but Mobile Safari is failing
+                // to copy the cache, meaning that the file DB needs to be recreated and
+                // synced again before everything works correctly. (Needless to say, this is
+                // a major problem and means that if a PWA is saved to home screen and then
+                // opened first time when the device is offline, then it *will not work*).
+                // Query functionality is impactated by this because it assumes the file db
+                // has been synced at least once before the query is run; this workaround
+                // uses a special '.locomote/synced' record added to the file db after a
+                // sync; if the record isn't present then the query request is delegated to
+                // the network. (Of course, this requires that the network is available for
+                // the workaround to have effect, otherwise the situation defaults to the
+                // broken state described above).
+                const synced = await fdb.read('.locomote/synced');
+                if( !synced ) {
+                    log('FDB not synced, delegating query request to network');
+                    return fetch( request );
+                }
+
+                const result = await fdb.query( params );
                 return makeJSONResponse( result );
             }
             catch( e ) {
@@ -132,8 +154,9 @@ async function pageFetch( request, path, params, record ) {
  * @param pageType  The page type.
  */
 async function loadPageTemplate( origin, pageType ) {
+    const fdb = await origin.fdb;
     const path = `_templates/page-${pageType}.html`;
-    const record = await origin.fdb.read( path );
+    const record = await fdb.read( path );
     if( !record ) {
         return undefined;
     }
@@ -258,8 +281,9 @@ function initOrigin( config ) {
         ? _initOriginFromURL( config )
         : _initOriginFromConfig( config );
     // Connect to the origin's file DB.
-    // Note that this adds an 'fdb' property to each origin.
-    origin._connected = self.fdb.connect( origin ).then( fdb => origin.fdb = fdb );
+    // NOTE The origin's fdb property must be accessed asynchronously
+    // before use, e.g.: const fdb = await origin.fdb;
+    origin.fdb = self.fdb.connect( origin );
     return origin;
 }
 
@@ -349,17 +373,9 @@ function addOrigins( origins ) {
     origins.forEach( addOrigin );
 }
 
-/**
- * Wait until all origins are connected and ready to handle requests.
- */
-function ready() {
-    return Promise.all( Origins.map( o => o._connected ) );
-}
-
 export {
     Origins,
     DefaultOrigin,
     addOrigin,
-    addOrigins,
-    ready 
+    addOrigins
 };

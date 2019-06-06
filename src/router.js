@@ -108,10 +108,11 @@ async function resolve( request, origin ) {
         return dynamic.apply( origin, [ request, path, params ]);
     }
     // Read file record for requested path.
-    const record = await origin.fdb.read( path );
+    const fdb = await origin.fdb;
+    const record = await fdb.read( path );
     if( record === undefined ) {
         // Check for the latest commit record.
-        const latest = await origin.fdb.read('.locomote/commit/$latest');
+        const latest = await fdb.read('.locomote/commit/$latest');
         if( latest === undefined ) {
             // No latest record indicates that the local file db isn't
             // synced - delegate the request to the server instead.
